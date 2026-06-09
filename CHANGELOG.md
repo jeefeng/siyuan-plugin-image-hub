@@ -3,6 +3,7 @@
 ## v0.4.8
 
 * [Upgrade devDependencies and implement kernel plugin demo](https://github.com/siyuan-note/plugin-sample/pull/42)
+* [Enhance KernelPlugin with MCP tool registration and update ESLint](https://github.com/siyuan-note/plugin-sample/pull/47)
 
 ## v0.4.7 2026-04-14
 
