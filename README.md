@@ -1,167 +1,100 @@
-[中文](https://github.com/siyuan-note/plugin-sample/blob/main/README_zh_CN.md)
+# OSS Image Bed
 
-# SiYuan plugin sample
+An Aliyun OSS image bed plugin for SiYuan. It detects local static images in the current document, uploads them to OSS, and replaces local links with remote links only after successful uploads. Failed uploads keep their original local links.
 
-## Get started
+## Features
 
-* Make a copy of this repo as a template with the <kbd>Use this template</kbd> button, please note that the repo name must be the same as the plugin name, the default branch must be `main`
-* Clone your repo to a local development folder. For convenience, you can place this folder in your `{workspace}/data/plugins/` folder
-* Install [NodeJS](https://nodejs.org/en/download) and [pnpm](https://pnpm.io/installation), then run `pnpm i` in the command line under your repo folder
-* Execute `pnpm run dev` for real-time compilation
-* Open SiYuan marketplace and enable plugin in downloaded tab
+- Preview static images in the current document.
+- Upload all local images in the current document and replace links after success.
+- Upload a single image manually.
+- Re-upload managed remote images to overwrite the OSS object.
+- Optionally auto upload when opening or switching documents.
+- Customize OSS object key templates and public domains.
 
-## Development
+## Settings
 
-* i18n/*
-* icon.png (160*160)
-* index.css
-* index.js
-* plugin.json
-* preview.png (1024*768)
-* README*.md
-* [Fontend API](https://github.com/siyuan-note/petal)
-* [Backend API](https://github.com/siyuan-note/siyuan/blob/master/API.md)
+Fill these fields in the plugin settings:
 
-## I18n
+- `AccessKey ID`
+- `AccessKey Secret`
+- `Bucket`
+- `Endpoint`, for example `oss-cn-hangzhou.aliyuncs.com`; `oss-cn-hangzhou` is also accepted.
+- `Object key template`, default: `siyuan/{docId}/{filename}`
+- `Custom public domain`, optional, for example `https://img.example.com`
+- `Auto upload when opening or switching docs`, optional
 
-In terms of internationalization, our main consideration is to support multiple languages. Specifically, we need to
-complete the following tasks:
+Object key template variables:
 
-* Meta information about the plugin itself, such as plugin description and readme
-  * `displayName`, `description` and `readme` fields in plugin.json, and the corresponding README*.md file
-* Text used in the plugin, such as button text and tooltips
-  * src/i18n/*.json language configuration files
-  * Use `this.i18.key` to get the text in the code
+- `{docId}` current document block ID
+- `{filename}` original file name
+- `{name}` file name without extension
+- `{ext}` extension
+- `{yyyy}`, `{mm}`, `{dd}` current date
 
-It is recommended that the plugin supports at least English and Simplified Chinese, so that more people can use it more conveniently. Unsupported languages do not need to be declared in the `displayName`, `description` and `readme` fields in plugin.json.
+## Local Enablement
 
-## plugin.json
+A SiYuan plugin does not start a standalone web server. SiYuan loads it from the workspace plugin directory. The plugin directory name must match `name` in `plugin.json`; this project still uses the template name, so the directory is `plugin-sample`.
 
-A typical example is as follows:
+### Development Mode
 
-```json
-{
-  "name": "plugin-sample",
-  "author": "Vanessa",
-  "url": "https://github.com/siyuan-note/plugin-sample",
-  "version": "0.4.2",
-  "minAppVersion": "3.3.0",
-  "backends": ["all"],
-  "frontends": ["all"],
-  "disabledInPublish": false,
-  "displayName": {
-    "default": "Plugin Sample",
-    "zh_CN": "插件示例"
-  },
-  "description": {
-    "default": "This is a plugin development sample",
-    "zh_CN": "这是一个插件开发示例"
-  },
-  "readme": {
-    "default": "README.md",
-    "zh_CN": "README_zh_CN.md"
-  },
-  "funding": {
-    "custom": ["https://ld246.com/sponsor"]
-  },
-  "keywords": [
-    "开发者参考",
-    "developer reference",
-    "示例插件"
-  ]
-}
+1. Find your SiYuan workspace directory.
+2. Put this project at `{workspace}/data/plugins/plugin-sample`.
+3. Run these commands in the project directory:
+
+```bash
+pnpm install
+pnpm run dev
 ```
 
-* `name`: Plugin package name, must be the same as the GitHub repository name, and cannot be duplicated with other plugins in the marketplace
-* `author`: Plugin author name
-* `url`: Plugin repo URL
-* `version`: Plugin version number, needs to follow the [semver](https://semver.org/) specification
-* `minAppVersion`: Minimum SiYuan version required to use this plugin
-* `disabledInPublish`: Whether to disable the plugin when using the publish service, defaults to false, i.e., not disabled
-* `backends`: Backend environment required by the plugin, optional values are `windows`, `linux`, `darwin`, `docker`, `android`, `ios`, `harmony` and `all`
-  * `windows`: Windows desktop
-  * `linux`: Linux desktop
-  * `darwin`: macOS desktop
-  * `docker`: Docker
-  * `android`: Android APP
-  * `ios`: iOS APP
-  * `harmony`: HarmonyOS APP
-  * `all`: All environments
-* `frontends`: Frontend environment required by the plugin, optional values are `desktop`, `desktop-window`, `mobile`, `browser-desktop`, `browser-mobile` and `all`
-  * `desktop`: Desktop
-  * `desktop-window`: Desktop window converted from tab
-  * `mobile`: Mobile APP
-  * `browser-desktop`: Desktop browser
-  * `browser-mobile`: Mobile browser
-  * `all`: All environments
-* `displayName`: Plugin name (plain text), displayed in the marketplace list
-  * `default`: Default language, must exist. If the plugin supports English, English should be used here
-  * `zh_CN`, `en_US` and other languages: optional
-* `description`: Plugin description (plain text), displayed in the marketplace list
-  * `default`: Default language, must exist. If the plugin supports English, English should be used here
-  * `zh_CN`, `en_US` and other languages: optional
-* `readme`: Readme file name, displayed in the marketplace details page
-  * `default`: Default language, must exist. If the plugin supports English, English should be used here
-  * `zh_CN`, `en_US` and other languages: optional
-* `funding`: Plugin sponsorship information, only one type will be displayed in the marketplace
-  * `openCollective`: Open Collective name
-  * `patreon`: Patreon name
-  * `github`: GitHub login name
-  * `custom`: Custom sponsorship link list
-* `keywords`: Search keyword list, used for marketplace search function, supplements search keywords beyond the values of `name`, `author`, `displayName`, and `description` fields
+4. Open or restart SiYuan.
+5. Go to `Settings -> Marketplace -> Downloaded`, then enable `OSS Image Bed`.
+6. `pnpm run dev` keeps generating root-level `index.js`, `index.css`, `kernel.js`, and `i18n/`. Disable and re-enable the plugin, or restart SiYuan, to load new changes.
 
-## Package
+### Packaged Install
 
-No matter which method is used to compile and package, we finally need to generate a package.zip, which contains at
-least the following files:
+1. Run:
 
-* i18n/* (If the plugin supports multiple languages, language files need to be packaged to this directory, otherwise this directory is not needed)
-* icon.png (recommended size: 160*160, file size should not exceed 20KB)
-* index.css
-* index.js
-* plugin.json
-* preview.png (recommended size: 1024*768, file size should not exceed 200KB)
-* README*.md
-
-## List on the marketplace
-
-* Execute `pnpm run build` to generate package.zip
-* Create a new GitHub release using your new version number as the "Tag version". See here for an
-  example: https://github.com/siyuan-note/plugin-sample/releases
-* Upload the file package.zip as binary attachments
-* Publish the release
-
-If this is the first release, you also need to create a PR to the [Community Bazaar](https://github.com/siyuan-note/bazaar) repository and modify the plugins.json file in it. This file is the index of all community plugin repositories, the format is:
-
-```json
-{
-  "repos": [
-    "username/reponame"
-  ]
-}
+```bash
+pnpm run build
 ```
 
-After the PR is merged, the bazaar will automatically update the index and deploy through GitHub Actions. For subsequent plugin releases, you only need to follow the above steps to create a new release, and you don't need to PR the community bazaar repository.
+2. The build creates `package.zip` and `dist/`.
+3. Put the files from `dist/` into `{workspace}/data/plugins/plugin-sample`, or use `package.zip` as the release package.
+4. Restart SiYuan and enable the plugin from `Settings -> Marketplace -> Downloaded`.
 
-Under normal circumstances, the community bazaar repository will automatically update the index and deploy every hour, and you can check the deployment status at https://github.com/siyuan-note/bazaar/actions.
+## Aliyun OSS Requirements
 
-## Developer's Guide
+The plugin uploads with browser-side `PUT Object` requests. Your bucket must allow cross-origin uploads from the SiYuan client origin, otherwise the browser blocks the request.
 
-Developers need to pay attention to the following specifications.
+Recommended OSS CORS rule:
 
-### 1. File Reading and Writing Specifications
+- Allowed origins: the actual SiYuan desktop or browser origin; relax only as needed for personal use.
+- Allowed methods: `PUT`, `GET`, `HEAD`
+- Allowed headers: `Authorization`, `Content-Type`, `x-oss-date`
+- Exposed headers: `ETag`
 
-If plugins or external extensions require direct reading or writing of files under the `data` directory, please use the kernel API to achieve this. **Do not call `fs` or other electron or nodejs APIs directly**, as it may result in data loss during synchronization and cause damage to cloud data.
+Use a limited RAM user AccessKey whenever possible and grant only the required upload/overwrite permissions for the target bucket.
 
-Related APIs can be found at: `/api/file/*` (e.g., `/api/file/getFile`).
+## Usage
 
-### 2. Daily Note Attribute Specifications
+Open a document, then click the image bed top bar button:
 
-When creating a daily note in SiYuan, a custom-dailynote-yyyymmdd attribute will be automatically added to the document to distinguish it from regular documents.
+- `Preview Current Document Images`: view document images, upload one image, or manually select local files to upload.
+- `Upload Current Document Local Images`: detect local images and upload them one by one. Successful images are replaced with remote URLs; failed images keep local URLs.
+- `Open settings`: edit OSS settings.
 
-> For more details, please refer to [Github Issue #9807](https://github.com/siyuan-note/siyuan/issues/9807).
+Recommended first test:
 
-Developers should pay attention to the following when developing the functionality to manually create Daily Notes:
+1. Configure CORS on the OSS bucket.
+2. Save OSS settings in the plugin settings panel.
+3. Create a test document and insert one local image.
+4. Click the image bed top bar button, then use `Preview Current Document Images` to confirm the image is detected.
+5. Click `Upload and Replace` or `Upload Current Document Local Images`.
+6. After success, the document image link becomes the OSS remote URL. If upload fails, the original local link remains unchanged.
 
-* If `/api/filetree/createDailyNote` is called to create a daily note, the attribute will be automatically added to the document, and developers do not need to handle it separately
-* If a document is created manually by developer's code (e.g., using the `createDocWithMd` API to create a daily note), please manually add this attribute to the document
+## Build
+
+```bash
+pnpm install
+pnpm run build
+```

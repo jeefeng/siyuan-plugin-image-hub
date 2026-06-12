@@ -1,164 +1,100 @@
-[English](https://github.com/siyuan-note/plugin-sample/blob/main/README.md)
+# OSS 图床
 
-# 思源笔记插件示例
+一个用于思源笔记的阿里云 OSS 图床插件。它可以识别当前文章中的本地静态图片，上传到 OSS 后自动把本地链接替换为远程链接；上传失败的图片会保留原本的本地链接。
 
-## 开始
+## 功能
 
-* 通过 <kbd>Use this template</kbd> 按钮将该库文件复制到你自己的库中，请注意库名必须和插件名称一致，默认分支必须为 `main`
-* 将你的库克隆到本地开发文件夹中，为了方便可以直接将开发文件夹放置在 `{工作空间}/data/plugins/` 下
-* 安装 [NodeJS](https://nodejs.org/en/download) 和 [pnpm](https://pnpm.io/installation)，然后在开发文件夹下执行 `pnpm i`
-* 执行 `pnpm run dev` 进行实时编译
-* 在思源中打开集市并在下载选项卡中启用插件
+- 预览当前文章中的静态图片。
+- 一键上传当前文章全部本地图片，并在成功后替换链接。
+- 单张图片手动上传。
+- 已由当前图床管理的远程图片支持再次上传覆盖。
+- 可选择在打开或切换文章时自动上传本地图片。
+- 支持自定义 OSS 对象路径模板和自定义访问域名。
 
-## 开发
+## 配置
 
-* i18n/*
-* icon.png (160*160)
-* index.css
-* index.js
-* plugin.json
-* preview.png (1024*768)
-* README*.md
-* [前端 API](https://github.com/siyuan-note/petal)
-* [后端 API](https://github.com/siyuan-note/siyuan/blob/master/API_zh_CN.md)
+在思源插件设置中填写：
 
-## 国际化
+- `AccessKey ID`
+- `AccessKey Secret`
+- `Bucket`
+- `Endpoint`，例如 `oss-cn-hangzhou.aliyuncs.com`，也可以填写 `oss-cn-hangzhou`
+- `对象路径模板`，默认 `siyuan/{docId}/{filename}`
+- `自定义访问域名`，可选，例如 `https://img.example.com`
+- `打开或切换文章时自动上传`，可选
 
-国际化方面我们主要考虑的是支持多语言，具体需要完成以下工作：
+对象路径模板支持：
 
-* 插件自身的元信息，比如插件描述和自述文件
-  * plugin.json 中的 `displayName`、`description` 和 `readme` 字段，以及对应的 README*.md 文件
-* 插件中使用的文本，比如按钮文字和提示信息
-  * src/i18n/*.json 语言配置文件
-  * 代码中使用 `this.i18.key` 获取文本
+- `{docId}` 当前文章块 ID
+- `{filename}` 原文件名
+- `{name}` 不含扩展名的文件名
+- `{ext}` 扩展名
+- `{yyyy}`、`{mm}`、`{dd}` 当前日期
 
-建议插件至少支持英文和简体中文，这样可以方便更多人使用。不支持的语种不需要在 plugin.json 中的 `displayName`、`description` 和 `readme` 字段中声明。
+## 本地启用
 
-## plugin.json
+思源插件不是启动一个单独的网站服务，而是由思源从工作空间的插件目录加载。插件目录名必须和 `plugin.json` 里的 `name` 一致；当前项目还是模板名，所以目录名是 `plugin-sample`。
 
-一个典型的示例如下：
+### 开发模式
 
-```json
-{
-  "name": "plugin-sample",
-  "author": "Vanessa",
-  "url": "https://github.com/siyuan-note/plugin-sample",
-  "version": "0.4.2",
-  "minAppVersion": "3.3.0",
-  "backends": ["all"],
-  "frontends": ["all"],
-  "disabledInPublish": false,
-  "displayName": {
-    "default": "Plugin Sample",
-    "zh_CN": "插件示例"
-  },
-  "description": {
-    "default": "This is a plugin development sample",
-    "zh_CN": "这是一个插件开发示例"
-  },
-  "readme": {
-    "default": "README.md",
-    "zh_CN": "README_zh_CN.md"
-  },
-  "funding": {
-    "custom": ["https://ld246.com/sponsor"]
-  },
-  "keywords": [
-    "开发者参考",
-    "developer reference",
-    "示例插件"
-  ]
-}
+1. 找到你的思源工作空间目录。
+2. 把本项目放到 `{工作空间}/data/plugins/plugin-sample`。
+3. 在项目目录执行：
+
+```bash
+pnpm install
+pnpm run dev
 ```
 
-* `name`：插件包名，必须和 GitHub 仓库名一致，且不能与集市中的其他插件重复
-* `author`：插件作者名
-* `url`：插件仓库地址
-* `version`：插件版本号，需要遵循 [semver](https://semver.org/lang/zh-CN/) 规范
-* `minAppVersion`：插件支持的最低思源笔记版本号
-* `disabledInPublish`：使用发布服务时是否禁用该插件，默认为 false，即不禁用
-* `backends`：插件需要的后端环境，可选值为 `windows`, `linux`, `darwin`, `docker`, `android`, `ios`, `harmony` 和 `all`
-  * `windows`：Windows 桌面端
-  * `linux`：Linux 桌面端
-  * `darwin`：macOS 桌面端
-  * `docker`：Docker 端
-  * `android`：Android 端
-  * `ios`：iOS 端
-  * `harmony`：鸿蒙端
-  * `all`：所有环境
-* `frontends`：插件需要的前端环境，可选值为 `desktop`, `desktop-window`, `mobile`, `browser-desktop`, `browser-mobile` 和 `all`
-  * `desktop`：桌面端
-  * `desktop-window`：桌面端页签转换的独立窗口
-  * `mobile`：移动端
-  * `browser-desktop`：桌面端浏览器
-  * `browser-mobile`：移动端浏览器
-  * `all`：所有环境
-* `displayName`：插件名称（纯文本），在插件集市列表中显示
-  * `default`：默认语言，必须存在。如果插件支持英文，此处应使用英文
-  * `zh_CN`、`en_US` 等其他语言：可选
-* `description`：插件描述（纯文本），在插件集市列表中显示
-  * `default`：默认语言，必须存在。如果插件支持英文，此处应使用英文
-  * `zh_CN`、`en_US` 等其他语言：可选
-* `readme`：自述文件名，在插件集市详情页中显示
-  * `default`：默认语言，必须存在。如果插件支持英文，此处应使用英文
-  * `zh_CN`、`en_US` 等其他语言：可选
-* `funding`：插件赞助信息，集市仅显示其中一种
-  * `openCollective`：Open Collective 名称
-  * `patreon`：Patreon 名称
-  * `github`：GitHub 登录名
-  * `custom`：自定义赞助链接列表
-* `keywords`：搜索关键字列表，用于集市搜索功能，补充 `name`、`author`、`displayName`、`description` 字段值以外的搜索关键词
+4. 打开或重启思源。
+5. 进入 `设置 -> 集市 -> 已下载`，启用 `OSS 图床`。
+6. 修改代码后 `pnpm run dev` 会持续生成根目录的 `index.js`、`index.css`、`kernel.js` 和 `i18n/`。回到思源禁用再启用插件，或重启思源即可加载新版本。
 
-## 打包
+### 打包安装
 
-无论使用何种方式编译打包，我们最终需要生成一个 package.zip，它至少包含如下文件：
+1. 在项目目录执行：
 
-* i18n/* (如果插件支持多语言，则需要将语言文件打包到该目录下，否则不需要该目录)
-* icon.png (建议尺寸为 160*160、文件大小不超过 20KB)
-* index.css
-* index.js
-* plugin.json
-* preview.png (建议尺寸为 1024*768、文件大小不超过 200KB)
-* README*.md
-
-## 上架集市
-
-* 执行 `pnpm run build` 生成 package.zip
-* 在 GitHub 上创建一个新的发布，使用插件版本号作为 “Tag version”，示例 https://github.com/siyuan-note/plugin-sample/releases
-* 上传 package.zip 作为二进制附件
-* 提交发布
-
-如果是第一次发布版本，还需要创建一个 PR 到 [Community Bazaar](https://github.com/siyuan-note/bazaar) 社区集市仓库，修改该库的 plugins.json。该文件是所有社区插件库的索引，格式为：
-
-```json
-{
-  "repos": [
-    "username/reponame"
-  ]
-}
+```bash
+pnpm run build
 ```
 
-PR 被合并以后集市会通过 GitHub Actions 自动更新索引并部署。后续发布新版本插件时只需要按照上述步骤创建新的发布即可，不需要再 PR 社区集市仓库。
+2. 构建完成后会生成 `package.zip` 和 `dist/`。
+3. 将 `dist/` 里的文件放到 `{工作空间}/data/plugins/plugin-sample`，或使用 `package.zip` 作为发布包。
+4. 重启思源后在 `设置 -> 集市 -> 已下载` 启用插件。
 
-正常情况下，社区集市仓库每隔 1 小时会自动更新索引并部署，可在 https://github.com/siyuan-note/bazaar/actions 查看部署状态。
+## 阿里云 OSS 要求
 
-## 开发者须知
+插件使用浏览器端 `PUT Object` 上传。Bucket 需要允许思源客户端来源进行跨域上传，否则浏览器会拦截请求。
 
-开发者需注意以下规范。
+建议在 OSS Bucket 的 CORS 规则中允许：
 
-### 1. 读写文件规范
+- 来源：思源桌面端或浏览器端实际来源；开发/自用时也可按需放宽。
+- 方法：`PUT`、`GET`、`HEAD`
+- 允许 Header：`Authorization`、`Content-Type`、`x-oss-date`
+- 暴露 Header：`ETag`
 
-插件或者外部扩展如果有直接读取或者写入 data 下文件的需求，请通过调用内核 API 来实现，**不要自行调用 `fs` 或者其他 electron、nodejs API**，否则可能会导致数据同步时分块丢失，造成云端数据损坏。
+请优先使用权限受限的 RAM 用户 AccessKey，只授予目标 Bucket 必要的上传/覆盖权限。
 
-相关 API 见 `/api/file/*`（例如 `/api/file/getFile` 等）。
+## 使用
 
-### 2. Daily Note 属性规范
+打开一篇文章后，点击顶栏图床按钮：
 
-思源在创建日记的时候会自动为文档添加 custom-dailynote-yyyymmdd 属性，以方便将日记文档同普通文档区分。
+- `预览当前文章图片`：查看文章中的图片、上传单张图片或手动选择本地文件上传。
+- `上传当前文章本地图片`：自动识别本地图片，逐张上传。成功的图片会替换为远程 URL，失败的图片继续使用本地 URL。
+- `打开设置`：修改 OSS 配置。
 
-> 详情请见 [Github Issue #9807](https://github.com/siyuan-note/siyuan/issues/9807)。
+第一次试用建议：
 
-开发者在开发手动创建 Daily Note 的功能时请注意：
+1. 先在 OSS Bucket 配好 CORS。
+2. 在插件设置里保存 OSS 配置。
+3. 新建一篇测试文章，插入一张本地图片。
+4. 点击顶栏图床按钮，先选择 `预览当前文章图片` 确认图片能被识别。
+5. 点击 `上传并替换` 或 `上传当前文章本地图片`。
+6. 上传成功后，文章里的本地图片链接会变成 OSS 远程链接；上传失败时链接不会被替换。
 
-* 如果调用了 `/api/filetree/createDailyNote` 创建日记，那么文档会自动添加这个属性，无需开发者特别处理
-* 如果是开发者代码手动创建文档（例如使用 `createDocWithMd` API 创建日记），请手动为文档添加该属性
+## 构建
+
+```bash
+pnpm install
+pnpm run build
+```

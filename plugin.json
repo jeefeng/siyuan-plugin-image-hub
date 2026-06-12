@@ -2,7 +2,7 @@
   "name": "plugin-sample",
   "author": "Vanessa",
   "url": "https://github.com/siyuan-note/plugin-sample",
-  "version": "0.4.7",
+  "version": "0.1.0",
   "minAppVersion": "3.6.4",
   "kernels": [
     "windows",
@@ -34,12 +34,12 @@
   ],
   "disabledInPublish": false,
   "displayName": {
-    "default": "Plugin Sample",
-    "zh_CN": "插件示例"
+    "default": "OSS Image Bed",
+    "zh_CN": "OSS 图床"
   },
   "description": {
-    "default": "This is a plugin development sample",
-    "zh_CN": "这是一个插件开发示例"
+    "default": "Upload local document images to Aliyun OSS and replace links automatically.",
+    "zh_CN": "自动上传文章本地图片到阿里云 OSS，并在成功后替换链接。"
   },
   "readme": {
     "default": "README.md",
@@ -54,8 +54,10 @@
     ]
   },
   "keywords": [
-    "开发者参考",
-    "developer reference",
-    "示例插件"
+    "图床",
+    "阿里云 OSS",
+    "image bed",
+    "Aliyun OSS",
+    "图片上传"
   ]
 }

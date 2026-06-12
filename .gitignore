@@ -9,3 +9,5 @@ index.css
 index.js
 kernel.js
 /i18n
+.dprint-cache
+.vscode
