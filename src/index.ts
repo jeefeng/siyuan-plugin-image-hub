@@ -1,18 +1,21 @@
 import {
     Dialog,
+    IProtyle,
     Plugin,
     Setting,
     fetchPost,
     getFrontend,
     showMessage,
-    IProtyle,
 } from "siyuan";
 import "./index.scss";
 
 const STORAGE_NAME = "image-bed-config";
 const AUTO_UPLOAD_DELAY = 1200;
+const PASTE_UPLOAD_DELAY = 1800;
 
 type ImageKind = "markdown" | "html";
+type ProviderType = "aliyun-oss" | "tencent-cos" | "qiniu" | "s3";
+type ManagerView = "article" | "settings";
 
 interface ImageBedSettings {
     accessKeyId: string;
@@ -21,7 +24,20 @@ interface ImageBedSettings {
     endpoint: string;
     directoryTemplate: string;
     customDomain: string;
+    autoUploadOnPaste: boolean;
     autoUploadOnSwitch: boolean;
+}
+
+interface StorageConfig extends ImageBedSettings {
+    id: string;
+    name: string;
+    provider: ProviderType;
+    enabled: boolean;
+}
+
+interface ImageBedStorage {
+    activeConfigId: string;
+    configs: StorageConfig[];
 }
 
 interface ArticleImage {
@@ -47,6 +63,7 @@ const DEFAULT_SETTINGS: ImageBedSettings = {
     endpoint: "oss-cn-hangzhou.aliyuncs.com",
     directoryTemplate: "siyuan/{docId}/{filename}",
     customDomain: "",
+    autoUploadOnPaste: true,
     autoUploadOnSwitch: false,
 };
 
@@ -63,10 +80,13 @@ const IMAGE_EXTENSIONS = new Set([
 ]);
 
 export default class ImageBedPlugin extends Plugin {
-    private settingsData: ImageBedSettings = {...DEFAULT_SETTINGS};
+    private storageData: ImageBedStorage = this.createDefaultStorage();
+    private settingsData: StorageConfig = this.storageData.configs[0];
     private isMobile = false;
     private autoUploadTimer = 0;
+    private pasteUploadTimers = new Map<string, number>();
     private currentDocId = "";
+    private managerView: ManagerView = "article";
     private uploadingDocs = new Set<string>();
 
     async onload() {
@@ -77,6 +97,7 @@ export default class ImageBedPlugin extends Plugin {
         this.createSettingPanel();
         this.eventBus.on("loaded-protyle-dynamic", this.handleProtyleChanged);
         this.eventBus.on("switch-protyle", this.handleProtyleChanged);
+        this.eventBus.on("paste", this.handlePaste);
     }
 
     onLayoutReady() {
@@ -85,22 +106,39 @@ export default class ImageBedPlugin extends Plugin {
             title: this.i18n.topBarTitle,
             position: "right",
             callback: () => {
-                this.openControlDialog().catch((error) => this.showError(error));
+                this.openManagerDialog().catch((error) => this.showError(error));
             },
         });
     }
 
     onunload() {
         window.clearTimeout(this.autoUploadTimer);
+        this.pasteUploadTimers.forEach((timer) => window.clearTimeout(timer));
+        this.pasteUploadTimers.clear();
         this.eventBus.off("loaded-protyle-dynamic", this.handleProtyleChanged);
         this.eventBus.off("switch-protyle", this.handleProtyleChanged);
+        this.eventBus.off("paste", this.handlePaste);
+    }
+
+    private async openManagerDialog() {
+        const dialog = new Dialog({
+            title: this.i18n.managerTitle,
+            content: "<div class=\"b3-dialog__content image-bed-manager-dialog\"></div>",
+            width: this.isMobile ? "94vw" : "1080px",
+            height: this.isMobile ? "86vh" : "760px",
+        });
+        const container = dialog.element.querySelector<HTMLElement>(".image-bed-manager-dialog");
+        if (!container) {
+            throw new Error(this.i18n.managerTitle);
+        }
+        await this.renderManager(container);
     }
 
     private registerCommands() {
         this.addCommand({
-            langKey: "previewCurrentDocImages",
+            langKey: "openManager",
             callback: () => {
-                this.openPreviewDialog().catch((error) => this.showError(error));
+                this.openManagerDialog().catch((error) => this.showError(error));
             },
         });
         this.addCommand({
@@ -112,464 +150,464 @@ export default class ImageBedPlugin extends Plugin {
     }
 
     private createSettingPanel() {
-        const controls: Record<keyof ImageBedSettings, HTMLInputElement> = {} as Record<
-            keyof ImageBedSettings,
-            HTMLInputElement
-        >;
-
-        this.setting = new Setting({
-            confirmCallback: () => {
-                this.settingsData = {
-                    accessKeyId: controls.accessKeyId.value.trim(),
-                    accessKeySecret: controls.accessKeySecret.value.trim(),
-                    bucket: controls.bucket.value.trim(),
-                    endpoint: controls.endpoint.value.trim(),
-                    directoryTemplate: controls.directoryTemplate.value.trim() || DEFAULT_SETTINGS.directoryTemplate,
-                    customDomain: controls.customDomain.value.trim(),
-                    autoUploadOnSwitch: controls.autoUploadOnSwitch.checked,
-                };
-                this.saveData(STORAGE_NAME, this.settingsData).then(() => {
-                    showMessage(this.i18n.settingsSaved);
-                }).catch((error) => this.showError(error));
-            },
+        const button = document.createElement("button");
+        button.className = "b3-button b3-button--text";
+        button.textContent = this.i18n.openManager;
+        button.addEventListener("click", () => {
+            this.openManagerDialog().catch((error) => this.showError(error));
         });
-
-        this.addTextSetting(
-            controls,
-            "accessKeyId",
-            this.i18n.accessKeyId,
-            this.i18n.accessKeyIdDesc,
-        );
-        this.addTextSetting(
-            controls,
-            "accessKeySecret",
-            this.i18n.accessKeySecret,
-            this.i18n.accessKeySecretDesc,
-            "password",
-        );
-        this.addTextSetting(controls, "bucket", this.i18n.bucket, this.i18n.bucketDesc);
-        this.addTextSetting(controls, "endpoint", this.i18n.endpoint, this.i18n.endpointDesc);
-        this.addTextSetting(
-            controls,
-            "directoryTemplate",
-            this.i18n.directoryTemplate,
-            this.i18n.directoryTemplateDesc,
-        );
-        this.addTextSetting(controls, "customDomain", this.i18n.customDomain, this.i18n.customDomainDesc);
-
-        const autoUploadElement = document.createElement("input");
-        autoUploadElement.type = "checkbox";
-        autoUploadElement.className = "b3-switch fn__flex-center";
-        autoUploadElement.checked = this.settingsData.autoUploadOnSwitch;
-        controls.autoUploadOnSwitch = autoUploadElement;
+        this.setting = new Setting({});
         this.setting.addItem({
-            title: this.i18n.autoUploadOnSwitch,
-            description: this.i18n.autoUploadOnSwitchDesc,
-            actionElement: autoUploadElement,
+            title: this.i18n.managerTitle,
+            description: this.i18n.managerDesc,
+            actionElement: button,
         });
     }
 
-    private addTextSetting(
-        controls: Record<keyof ImageBedSettings, HTMLInputElement>,
-        key: keyof ImageBedSettings,
-        title: string,
-        description: string,
-        type = "text",
-    ) {
-        const inputElement = document.createElement("input");
-        inputElement.className = "b3-text-field fn__block";
-        inputElement.type = type;
-        inputElement.value = String(this.settingsData[key] ?? "");
-        controls[key] = inputElement;
-        this.setting.addItem({
-            title,
-            description,
-            createActionElement: () => inputElement,
-        });
-    }
-
-    private async openPreviewDialog() {
-        const docId = this.getCurrentDocId();
-        const markdown = await this.getDocumentMarkdown(docId);
-        const images = this.extractImages(markdown);
-        const dialog = new Dialog({
-            title: this.i18n.previewCurrentDocImages,
-            content: this.renderPreviewDialog(images),
-            width: this.isMobile ? "92vw" : "820px",
-            height: this.isMobile ? "76vh" : "680px",
-        });
-
-        const contentElement = dialog.element.querySelector(".image-bed");
-        const listElement = dialog.element.querySelector(".image-bed__list");
-        const resultElement = dialog.element.querySelector(".image-bed__result");
-        const fileInputElement = dialog.element.querySelector<HTMLInputElement>(".image-bed__file-input");
-        const uploadAllButton = contentElement?.querySelector<HTMLButtonElement>("[data-action='upload-local-all']");
-        const selectFilesButton = contentElement?.querySelector<HTMLButtonElement>("[data-action='select-files']");
-        if (!contentElement || !listElement || !resultElement || !fileInputElement || !uploadAllButton || !selectFilesButton) {
-            throw new Error(this.i18n.previewInitFailed);
-        }
-
-        const refresh = async () => {
-            const nextMarkdown = await this.getDocumentMarkdown(docId);
-            listElement.innerHTML = this.renderImageList(this.extractImages(nextMarkdown));
-            bindImageActions();
-        };
-
-        const showInlineResult = (text: string) => {
-            resultElement.textContent = text;
-            resultElement.classList.remove("fn__none");
-        };
-
-        const overwriteManagedImage = async (image: ArticleImage, button: HTMLButtonElement) => {
-            if (!image.objectKey) {
-                throw new Error(this.i18n.imageNoLongerExists);
-            }
-            const file = await this.pickImageFile();
-            if (!file) {
-                button.disabled = false;
-                button.textContent = button.dataset.label || this.i18n.reuploadOverwrite;
-                return;
-            }
-            const remoteUrl = await this.uploadBlob(file, image.objectKey, file.type || this.getMimeType(file.name));
-            showInlineResult(remoteUrl);
-            await refresh();
-        };
-
-        const bindImageActions = () => {
-            listElement.querySelectorAll<HTMLButtonElement>("[data-action='upload-image']").forEach((button) => {
-                button.addEventListener("click", async () => {
-                    button.disabled = true;
-                    button.textContent = this.i18n.uploading;
-                    const source = button.dataset.source;
-                    try {
-                        const currentMarkdown = await this.getDocumentMarkdown(docId);
-                        const image = this.extractImages(currentMarkdown).find((item) => item.source === source);
-                        if (!image) {
-                            throw new Error(this.i18n.imageNoLongerExists);
-                        }
-                        if (image.isManagedRemote && !image.isLocal) {
-                            await overwriteManagedImage(image, button);
-                            return;
-                        }
-                        const result = await this.uploadArticleImage(docId, image);
-                        if (result.remoteUrl && image.isLocal) {
-                            await this.replaceImageInDocument(docId, image.source, result.remoteUrl);
-                        }
-                        showInlineResult(result.remoteUrl || this.i18n.uploadDone);
-                        await refresh();
-                    } catch (error) {
-                        this.showError(error);
-                        button.disabled = false;
-                        button.textContent = button.dataset.label;
-                    }
-                });
-            });
-        };
-
-        uploadAllButton.addEventListener(
-            "click",
-            async (event) => {
-                const button = event.currentTarget as HTMLButtonElement;
-                button.disabled = true;
-                button.textContent = this.i18n.uploading;
-                try {
-                    const results = await this.uploadCurrentDocumentImages(docId, false);
-                    showInlineResult(this.formatUploadSummary(results));
-                    await refresh();
-                } finally {
-                    button.disabled = false;
-                    button.textContent = this.i18n.uploadAllLocalImages;
-                }
-            },
-        );
-
-        selectFilesButton.addEventListener(
-            "click",
-            () => fileInputElement.click(),
-        );
-
-        fileInputElement.addEventListener("change", async () => {
-            const files = Array.from(fileInputElement.files || []);
-            if (files.length === 0) {
-                return;
-            }
-            try {
-                this.assertSettingsReady();
-                const urls: string[] = [];
-                for (const file of files) {
-                    const remoteUrl = await this.uploadBlob(
-                        file,
-                        this.createObjectKey(docId, file.name),
-                        file.type || this.getMimeType(file.name),
-                    );
-                    urls.push(remoteUrl);
-                }
-                showInlineResult(urls.join("\n"));
-            } catch (error) {
-                this.showError(error);
-            } finally {
-                fileInputElement.value = "";
-            }
-        });
-
-        bindImageActions();
-    }
-
-    private async openControlDialog() {
+    private async renderManager(element: HTMLElement) {
         const docId = this.currentDocId || this.findCurrentDocIdFromDom();
         const images = docId ? this.extractImages(await this.getDocumentMarkdown(docId)) : [];
-        const dialog = new Dialog({
-            title: this.i18n.controlPanelTitle,
-            content: this.renderControlDialog(images, Boolean(docId)),
-            width: this.isMobile ? "94vw" : "920px",
-            height: this.isMobile ? "86vh" : "760px",
-        });
-
-        const panelElement = dialog.element.querySelector(".image-bed-panel");
-        const listElement = dialog.element.querySelector(".image-bed__list");
-        const resultElement = dialog.element.querySelector(".image-bed__result");
-        const fileInputElement = dialog.element.querySelector<HTMLInputElement>(".image-bed__file-input");
-        if (!panelElement || !listElement || !resultElement || !fileInputElement) {
-            throw new Error(this.i18n.previewInitFailed);
-        }
-
-        const showInlineResult = (text: string) => {
-            resultElement.textContent = text;
-            resultElement.classList.remove("fn__none");
-        };
-
-        const saveSettingsFromPanel = async () => {
-            this.settingsData = this.readSettingsFromElement(panelElement);
-            await this.saveData(STORAGE_NAME, this.settingsData);
-            showMessage(this.i18n.settingsSaved);
-        };
-
-        const refreshImages = async () => {
-            const currentDocId = this.getCurrentDocId();
-            const markdown = await this.getDocumentMarkdown(currentDocId);
-            listElement.innerHTML = this.renderImageList(this.extractImages(markdown));
-            bindImageActions();
-        };
-
-        const overwriteManagedImage = async (image: ArticleImage, button: HTMLButtonElement) => {
-            if (!image.objectKey) {
-                throw new Error(this.i18n.imageNoLongerExists);
-            }
-            const file = await this.pickImageFile();
-            if (!file) {
-                button.disabled = false;
-                button.textContent = button.dataset.label || this.i18n.reuploadOverwrite;
-                return;
-            }
-            const remoteUrl = await this.uploadBlob(file, image.objectKey, file.type || this.getMimeType(file.name));
-            showInlineResult(remoteUrl);
-            await refreshImages();
-        };
-
-        const bindImageActions = () => {
-            listElement.querySelectorAll<HTMLButtonElement>("[data-action='upload-image']").forEach((button) => {
-                button.addEventListener("click", async () => {
-                    button.disabled = true;
-                    button.textContent = this.i18n.uploading;
-                    try {
-                        await saveSettingsFromPanel();
-                        const currentDocId = this.getCurrentDocId();
-                        const markdown = await this.getDocumentMarkdown(currentDocId);
-                        const source = button.dataset.source;
-                        const image = this.extractImages(markdown).find((item) => item.source === source);
-                        if (!image) {
-                            throw new Error(this.i18n.imageNoLongerExists);
-                        }
-                        if (image.isManagedRemote && !image.isLocal) {
-                            await overwriteManagedImage(image, button);
-                            return;
-                        }
-                        const result = await this.uploadArticleImage(currentDocId, image);
-                        if (result.remoteUrl && image.isLocal) {
-                            await this.replaceImageInDocument(currentDocId, image.source, result.remoteUrl);
-                        }
-                        showInlineResult(result.remoteUrl || this.i18n.uploadDone);
-                        await refreshImages();
-                    } catch (error) {
-                        this.showError(error);
-                        button.disabled = false;
-                        button.textContent = button.dataset.label;
-                    }
-                });
-            });
-        };
-
-        panelElement.querySelector<HTMLButtonElement>("[data-action='save-settings']")?.addEventListener(
-            "click",
-            async () => {
-                try {
-                    await saveSettingsFromPanel();
-                } catch (error) {
-                    this.showError(error);
-                }
-            },
-        );
-
-        panelElement.querySelector<HTMLButtonElement>("[data-action='refresh-images']")?.addEventListener(
-            "click",
-            async () => {
-                try {
-                    await refreshImages();
-                    showInlineResult(this.i18n.previewRefreshed);
-                } catch (error) {
-                    this.showError(error);
-                }
-            },
-        );
-
-        panelElement.querySelector<HTMLButtonElement>("[data-action='upload-current']")?.addEventListener(
-            "click",
-            async (event) => {
-                const button = event.currentTarget as HTMLButtonElement;
-                button.disabled = true;
-                button.textContent = this.i18n.uploading;
-                try {
-                    await saveSettingsFromPanel();
-                    const results = await this.uploadCurrentDocumentImages(this.getCurrentDocId(), false);
-                    showInlineResult(this.formatUploadSummary(results));
-                    await refreshImages();
-                } catch (error) {
-                    this.showError(error);
-                } finally {
-                    button.disabled = false;
-                    button.textContent = this.i18n.uploadCurrentDocImages;
-                }
-            },
-        );
-
-        panelElement.querySelector<HTMLButtonElement>("[data-action='select-files']")?.addEventListener(
-            "click",
-            () => fileInputElement.click(),
-        );
-
-        fileInputElement.addEventListener("change", async () => {
-            const files = Array.from(fileInputElement.files || []);
-            if (files.length === 0) {
-                return;
-            }
-            try {
-                await saveSettingsFromPanel();
-                const currentDocId = this.currentDocId || this.findCurrentDocIdFromDom() || "manual";
-                const urls: string[] = [];
-                for (const file of files) {
-                    const remoteUrl = await this.uploadBlob(
-                        file,
-                        this.createObjectKey(currentDocId, file.name),
-                        file.type || this.getMimeType(file.name),
-                    );
-                    urls.push(remoteUrl);
-                }
-                showInlineResult(urls.join("\n"));
-            } catch (error) {
-                this.showError(error);
-            } finally {
-                fileInputElement.value = "";
-            }
-        });
-
-        bindImageActions();
+        const config = this.getActiveConfig();
+        element.innerHTML = `<div class="image-bed-manager">
+    <aside class="image-bed-manager__sidebar">
+        <div class="image-bed-manager__brand">
+            <svg><use xlink:href="#iconImage"></use></svg>
+            <span>${this.escapeHtml(this.i18n.managerTitle)}</span>
+        </div>
+        <button class="image-bed-manager__nav ${this.managerView === "article" ? "is-active" : ""}" data-view="article">${this.escapeHtml(this.i18n.articleHome)}</button>
+        <button class="image-bed-manager__nav ${this.managerView === "settings" ? "is-active" : ""}" data-view="settings">${this.escapeHtml(this.i18n.storageConfigs)}</button>
+    </aside>
+    <main class="image-bed-manager__main">
+        ${this.renderManagerHeader(config)}
+        ${this.managerView === "article" ? this.renderArticleHome(images, Boolean(docId), config) : this.renderConfigManager(config)}
+    </main>
+</div>`;
+        this.bindManagerEvents(element);
     }
 
-    private renderControlDialog(images: ArticleImage[], hasDocument: boolean) {
-        return `<div class="b3-dialog__content image-bed-panel">
-    <div class="image-bed-panel__layout">
-        <section class="image-bed-panel__settings">
-            <div class="image-bed-panel__section-title">${this.escapeHtml(this.i18n.aliyunOssConfig)}</div>
-            ${this.renderSettingInput("accessKeyId", this.i18n.accessKeyId, this.settingsData.accessKeyId)}
-            ${this.renderSettingInput("accessKeySecret", this.i18n.accessKeySecret, this.settingsData.accessKeySecret, "password")}
-            ${this.renderSettingInput("bucket", this.i18n.bucket, this.settingsData.bucket)}
-            ${this.renderSettingInput("endpoint", this.i18n.endpoint, this.settingsData.endpoint)}
-            ${this.renderSettingInput("directoryTemplate", this.i18n.directoryTemplate, this.settingsData.directoryTemplate)}
-            ${this.renderSettingInput("customDomain", this.i18n.customDomain, this.settingsData.customDomain)}
-            <label class="image-bed-panel__switch">
-                <input type="checkbox" data-field="autoUploadOnSwitch" ${this.settingsData.autoUploadOnSwitch ? "checked" : ""}>
-                <span>${this.escapeHtml(this.i18n.autoUploadOnSwitch)}</span>
-            </label>
-            <div class="image-bed-panel__actions">
-                <button class="b3-button b3-button--text" data-action="save-settings">${this.escapeHtml(this.i18n.saveAndApply)}</button>
-            </div>
-            <div class="image-bed-panel__hint">${this.escapeHtml(this.i18n.controlPanelHint)}</div>
-        </section>
-        <section class="image-bed-panel__images">
-            <div class="image-bed-panel__section-title">${this.escapeHtml(this.i18n.currentDocImages)}</div>
-            <div class="image-bed__toolbar">
-                <button class="b3-button b3-button--text" data-action="upload-current">${this.escapeHtml(
-            this.i18n.uploadCurrentDocImages,
-        )}</button>
-                <button class="b3-button b3-button--outline" data-action="refresh-images">${this.escapeHtml(
-            this.i18n.refreshImages,
-        )}</button>
-                <button class="b3-button b3-button--outline" data-action="select-files">${this.escapeHtml(
-            this.i18n.selectImagesToUpload,
-        )}</button>
-                <input class="image-bed__file-input fn__none" type="file" accept="image/*" multiple>
-            </div>
-            <pre class="image-bed__result fn__none"></pre>
-            ${hasDocument ? "" : `<div class="image-bed-panel__hint">${this.escapeHtml(this.i18n.openDocumentFirst)}</div>`}
-            <div class="image-bed__list">${this.renderImageList(images)}</div>
-        </section>
+    private renderManagerHeader(config: StorageConfig) {
+        const options = this.storageData.configs.map((item) =>
+            `<option value="${this.escapeAttribute(item.id)}" ${item.id === config.id ? "selected" : ""}>${this.escapeHtml(item.name)}</option>`
+        ).join("");
+        return `<header class="image-bed-manager__header">
+    <div>
+        <div class="image-bed-manager__title">${this.escapeHtml(this.managerView === "article" ? this.i18n.articleHome : this.i18n.storageConfigs)}</div>
+        <div class="image-bed-manager__subtitle">${this.escapeHtml(this.providerLabel(config.provider))} / ${this.escapeHtml(config.bucket || this.i18n.bucketNotSet)}</div>
     </div>
+    <div class="image-bed-manager__header-actions">
+        <select class="b3-select" data-action="switch-active-config">${options}</select>
+        <button class="b3-button b3-button--outline" data-action="refresh-manager">${this.escapeHtml(this.i18n.refreshImages)}</button>
+        <button class="b3-button b3-button--text" data-action="upload-current">${this.escapeHtml(this.i18n.uploadCurrentDocImages)}</button>
+    </div>
+</header>`;
+    }
+
+    private renderArticleHome(images: ArticleImage[], hasDocument: boolean, config: StorageConfig) {
+        const localCount = images.filter((item) => item.isLocal).length;
+        const managedCount = images.filter((item) => item.isManagedRemote).length;
+        return `<section class="image-bed-manager__view">
+    <div class="image-bed-manager__stats">
+        ${this.renderStat(this.i18n.totalImages, String(images.length))}
+        ${this.renderStat(this.i18n.localImages, String(localCount))}
+        ${this.renderStat(this.i18n.uploadedImages, String(managedCount))}
+        ${this.renderStat(this.i18n.activeStorage, config.name)}
+    </div>
+    <pre class="image-bed__result fn__none"></pre>
+    ${hasDocument ? "" : `<div class="image-bed-manager__notice">${this.escapeHtml(this.i18n.openDocumentFirst)}</div>`}
+    <div class="image-bed__list">${this.renderImageList(images)}</div>
+</section>`;
+    }
+
+    private renderStat(label: string, value: string) {
+        return `<div class="image-bed-manager__stat">
+    <span>${this.escapeHtml(label)}</span>
+    <strong>${this.escapeHtml(value)}</strong>
 </div>`;
     }
 
-    private renderSettingInput(key: keyof ImageBedSettings, label: string, value: string, type = "text") {
-        return `<label class="image-bed-panel__field">
-    <span>${this.escapeHtml(label)}</span>
-    <input class="b3-text-field fn__block" type="${this.escapeAttribute(type)}" data-field="${this.escapeAttribute(
-            key,
-        )}" value="${this.escapeAttribute(value)}">
+    private renderConfigManager(activeConfig: StorageConfig) {
+        const configList = this.storageData.configs.map((config) => {
+            const isActive = config.id === activeConfig.id;
+            return `<button class="image-bed-config-card ${isActive ? "is-active" : ""}" data-action="select-config" data-id="${this.escapeAttribute(config.id)}">
+    <span>${this.escapeHtml(config.name)}</span>
+    <small>${this.escapeHtml(this.providerLabel(config.provider))} / ${this.escapeHtml(config.bucket || this.i18n.bucketNotSet)}</small>
+</button>`;
+        }).join("");
+        return `<section class="image-bed-manager__view image-bed-manager__config-view">
+    <div class="image-bed-manager__config-list">
+        <div class="image-bed-manager__config-actions">
+            <button class="b3-button b3-button--text" data-action="add-config">${this.escapeHtml(this.i18n.addConfig)}</button>
+            <button class="b3-button b3-button--outline" data-action="duplicate-config">${this.escapeHtml(this.i18n.duplicateConfig)}</button>
+        </div>
+        ${configList}
+    </div>
+    <form class="image-bed-manager__form">
+        ${this.renderConfigForm(activeConfig)}
+        <div class="image-bed-manager__form-actions">
+            <button class="b3-button b3-button--text" type="button" data-action="save-config">${this.escapeHtml(this.i18n.saveConfig)}</button>
+            <button class="b3-button b3-button--outline" type="button" data-action="test-config">${this.escapeHtml(this.i18n.testConnection)}</button>
+            <button class="b3-button b3-button--outline" type="button" data-action="delete-config">${this.escapeHtml(this.i18n.deleteConfig)}</button>
+        </div>
+        <div class="image-bed-manager__hint">${this.escapeHtml(this.i18n.multiProviderHint)}</div>
+    </form>
+</section>`;
+    }
+
+    private renderConfigForm(config: StorageConfig) {
+        return `${this.renderManagerInput("name", this.i18n.configName, config.name)}
+<label class="image-bed-panel__field">
+    <span>${this.escapeHtml(this.i18n.provider)}</span>
+    <select class="b3-select" data-field="provider">
+        <option value="aliyun-oss" ${config.provider === "aliyun-oss" ? "selected" : ""}>${this.escapeHtml(this.i18n.aliyunOss)}</option>
+        <option value="tencent-cos" disabled>${this.escapeHtml(this.i18n.tencentCosSoon)}</option>
+        <option value="qiniu" disabled>${this.escapeHtml(this.i18n.qiniuSoon)}</option>
+        <option value="s3" disabled>${this.escapeHtml(this.i18n.s3Soon)}</option>
+    </select>
+</label>
+${this.renderManagerInput("accessKeyId", this.i18n.accessKeyId, config.accessKeyId)}
+${this.renderManagerInput("accessKeySecret", this.i18n.accessKeySecret, config.accessKeySecret, "password")}
+${this.renderManagerInput("bucket", this.i18n.bucket, config.bucket)}
+${this.renderManagerInput("endpoint", this.i18n.endpoint, config.endpoint)}
+${this.renderManagerInput("directoryTemplate", this.i18n.directoryTemplate, config.directoryTemplate)}
+${this.renderManagerInput("customDomain", this.i18n.customDomain, config.customDomain)}
+<label class="image-bed-panel__switch">
+    <input type="checkbox" data-field="autoUploadOnPaste" ${config.autoUploadOnPaste ? "checked" : ""}>
+    <span>${this.escapeHtml(this.i18n.autoUploadOnPaste)}</span>
+</label>
+<label class="image-bed-panel__switch">
+    <input type="checkbox" data-field="autoUploadOnSwitch" ${config.autoUploadOnSwitch ? "checked" : ""}>
+    <span>${this.escapeHtml(this.i18n.autoUploadOnSwitch)}</span>
 </label>`;
     }
 
-    private readSettingsFromElement(element: Element): ImageBedSettings {
-        const readValue = (key: keyof ImageBedSettings) => {
-            const input = element.querySelector<HTMLInputElement>(`[data-field='${key}']`);
-            return input?.value.trim() || "";
+    private renderManagerInput(key: string, label: string, value: string, type = "text") {
+        if (key === "accessKeySecret") {
+            return `<label class="image-bed-panel__field">
+    <span>${this.escapeHtml(label)}</span>
+    <div class="image-bed-panel__secret">
+        <input class="b3-text-field fn__block" type="${this.escapeAttribute(type)}" data-field="${this.escapeAttribute(key)}" value="${this.escapeAttribute(value)}">
+        <button class="b3-button b3-button--outline image-bed-panel__secret-toggle" type="button" data-action="toggle-secret" data-target="${this.escapeAttribute(key)}" title="${this.escapeAttribute(this.i18n.showSecret)}" aria-label="${this.escapeAttribute(this.i18n.showSecret)}" aria-pressed="false">
+            ${this.renderSecretIcon(false)}
+        </button>
+    </div>
+</label>`;
+        }
+        return `<label class="image-bed-panel__field">
+    <span>${this.escapeHtml(label)}</span>
+    <input class="b3-text-field fn__block" type="${this.escapeAttribute(type)}" data-field="${this.escapeAttribute(key)}" value="${this.escapeAttribute(value)}">
+</label>`;
+    }
+
+    private bindManagerEvents(element: HTMLElement) {
+        element.querySelectorAll<HTMLButtonElement>("[data-view]").forEach((button) => {
+            button.addEventListener("click", () => {
+                this.managerView = button.dataset.view as ManagerView;
+                this.renderManager(element).catch((error) => this.showError(error));
+            });
+        });
+
+        element.querySelector<HTMLSelectElement>("[data-action='switch-active-config']")?.addEventListener("change", async (event) => {
+            this.storageData.activeConfigId = (event.currentTarget as HTMLSelectElement).value;
+            this.syncActiveSettings();
+            await this.saveStorage();
+            await this.renderManager(element);
+        });
+
+        element.querySelector<HTMLButtonElement>("[data-action='refresh-manager']")?.addEventListener("click", () => {
+            this.renderManager(element).catch((error) => this.showError(error));
+        });
+
+        element.querySelectorAll<HTMLButtonElement>("[data-action='toggle-secret']").forEach((button) => {
+            button.addEventListener("click", () => {
+                const input = element.querySelector<HTMLInputElement>(`[data-field='${button.dataset.target || ""}']`);
+                if (!input) {
+                    return;
+                }
+                const shouldShow = input.type === "password";
+                input.type = shouldShow ? "text" : "password";
+                const label = shouldShow ? this.i18n.hideSecret : this.i18n.showSecret;
+                button.title = label;
+                button.setAttribute("aria-label", label);
+                button.setAttribute("aria-pressed", String(shouldShow));
+                button.innerHTML = this.renderSecretIcon(shouldShow);
+            });
+        });
+
+        element.querySelector<HTMLButtonElement>("[data-action='upload-current']")?.addEventListener("click", async (event) => {
+            const button = event.currentTarget as HTMLButtonElement;
+            button.disabled = true;
+            button.textContent = this.i18n.uploading;
+            try {
+                const results = await this.uploadCurrentDocumentImages(this.getCurrentDocId(), false);
+                this.showInlineResult(element, this.formatUploadSummary(results));
+                await this.renderManager(element);
+            } catch (error) {
+                this.showError(error);
+            } finally {
+                button.disabled = false;
+                button.textContent = this.i18n.uploadCurrentDocImages;
+            }
+        });
+
+        element.querySelectorAll<HTMLButtonElement>("[data-action='upload-image']").forEach((button) => {
+            button.addEventListener("click", async () => {
+                const label = button.dataset.label || this.i18n.uploadAndReplace;
+                button.disabled = true;
+                button.textContent = this.i18n.uploading;
+                try {
+                    const docId = this.getCurrentDocId();
+                    const image = this.extractImages(await this.getDocumentMarkdown(docId)).find((item) => item.source === button.dataset.source);
+                    if (!image) {
+                        throw new Error(this.i18n.imageNoLongerExists);
+                    }
+                    if (image.isManagedRemote && !image.isLocal) {
+                        await this.overwriteManagedImage(element, image, button);
+                        return;
+                    }
+                    const result = await this.uploadArticleImage(docId, image);
+                    if (result.remoteUrl && image.isLocal) {
+                        await this.replaceImageInDocument(docId, image.source, result.remoteUrl);
+                    }
+                    this.showInlineResult(element, result.remoteUrl || this.i18n.uploadDone);
+                    await this.renderManager(element);
+                } catch (error) {
+                    this.showError(error);
+                } finally {
+                    if (button.isConnected) {
+                        button.disabled = false;
+                        button.textContent = label;
+                    }
+                }
+            });
+        });
+
+        element.querySelectorAll<HTMLButtonElement>("[data-action='select-config']").forEach((button) => {
+            button.addEventListener("click", async () => {
+                this.storageData.activeConfigId = button.dataset.id || this.storageData.activeConfigId;
+                this.syncActiveSettings();
+                await this.saveStorage();
+                await this.renderManager(element);
+            });
+        });
+
+        element.querySelector<HTMLButtonElement>("[data-action='add-config']")?.addEventListener("click", async () => {
+            const config = this.createStorageConfig(this.i18n.newConfigName);
+            this.storageData.configs.push(config);
+            this.storageData.activeConfigId = config.id;
+            this.syncActiveSettings();
+            await this.saveStorage();
+            await this.renderManager(element);
+        });
+
+        element.querySelector<HTMLButtonElement>("[data-action='duplicate-config']")?.addEventListener("click", async () => {
+            const active = this.getActiveConfig();
+            const config = {...active, id: this.createId(), name: `${active.name} Copy`};
+            this.storageData.configs.push(config);
+            this.storageData.activeConfigId = config.id;
+            this.syncActiveSettings();
+            await this.saveStorage();
+            await this.renderManager(element);
+        });
+
+        element.querySelector<HTMLButtonElement>("[data-action='save-config']")?.addEventListener("click", async () => {
+            this.updateActiveConfigFromForm(element);
+            await this.saveStorage();
+            showMessage(this.i18n.settingsSaved);
+            await this.renderManager(element);
+        });
+
+        element.querySelector<HTMLButtonElement>("[data-action='test-config']")?.addEventListener("click", () => {
+            this.updateActiveConfigFromForm(element);
+            this.assertSettingsReady();
+            showMessage(this.i18n.configLooksReady);
+        });
+
+        element.querySelector<HTMLButtonElement>("[data-action='delete-config']")?.addEventListener("click", async () => {
+            if (this.storageData.configs.length <= 1) {
+                showMessage(this.i18n.keepOneConfig, 5000, "error");
+                return;
+            }
+            if (!window.confirm(this.i18n.confirmDeleteConfig)) {
+                return;
+            }
+            const activeId = this.storageData.activeConfigId;
+            this.storageData.configs = this.storageData.configs.filter((config) => config.id !== activeId);
+            this.storageData.activeConfigId = this.storageData.configs[0].id;
+            this.syncActiveSettings();
+            await this.saveStorage();
+            await this.renderManager(element);
+        });
+    }
+
+    private async overwriteManagedImage(element: HTMLElement, image: ArticleImage, button: HTMLButtonElement) {
+        if (!image.objectKey) {
+            throw new Error(this.i18n.imageNoLongerExists);
+        }
+        const file = await this.pickImageFile();
+        if (!file) {
+            button.disabled = false;
+            button.textContent = button.dataset.label || this.i18n.reuploadOverwrite;
+            return;
+        }
+        const remoteUrl = await this.uploadBlob(file, image.objectKey, file.type || this.getMimeType(file.name));
+        this.showInlineResult(element, remoteUrl);
+        await this.renderManager(element);
+    }
+
+    private showInlineResult(element: HTMLElement, text: string) {
+        const resultElement = element.querySelector<HTMLElement>(".image-bed__result");
+        if (!resultElement) {
+            showMessage(text);
+            return;
+        }
+        resultElement.textContent = text;
+        resultElement.classList.remove("fn__none");
+    }
+
+    private updateActiveConfigFromForm(element: HTMLElement) {
+        const active = this.getActiveConfig();
+        const readValue = (key: string) => element.querySelector<HTMLInputElement | HTMLSelectElement>(`[data-field='${key}']`)?.value.trim() || "";
+        active.name = readValue("name") || active.name;
+        active.provider = (readValue("provider") || "aliyun-oss") as ProviderType;
+        active.accessKeyId = readValue("accessKeyId");
+        active.accessKeySecret = readValue("accessKeySecret");
+        active.bucket = readValue("bucket");
+        active.endpoint = readValue("endpoint");
+        active.directoryTemplate = readValue("directoryTemplate") || DEFAULT_SETTINGS.directoryTemplate;
+        active.customDomain = readValue("customDomain");
+        active.autoUploadOnPaste = Boolean(element.querySelector<HTMLInputElement>("[data-field='autoUploadOnPaste']")?.checked);
+        active.autoUploadOnSwitch = Boolean(element.querySelector<HTMLInputElement>("[data-field='autoUploadOnSwitch']")?.checked);
+        this.syncActiveSettings();
+    }
+
+    private getActiveConfig() {
+        const config = this.storageData.configs.find((item) => item.id === this.storageData.activeConfigId) || this.storageData.configs[0];
+        if (!config) {
+            const fallback = this.createStorageConfig(this.i18n.defaultConfigName || "Aliyun OSS");
+            this.storageData.configs = [fallback];
+            this.storageData.activeConfigId = fallback.id;
+            return fallback;
+        }
+        return config;
+    }
+
+    private syncActiveSettings() {
+        this.settingsData = this.getActiveConfig();
+    }
+
+    private async saveStorage() {
+        this.syncActiveSettings();
+        await this.saveData(STORAGE_NAME, this.storageData);
+    }
+
+    private createDefaultStorage(): ImageBedStorage {
+        const config = this.createStorageConfig("Aliyun OSS");
+        return {
+            activeConfigId: config.id,
+            configs: [config],
+        };
+    }
+
+    private createStorageConfig(name: string): StorageConfig {
+        return {
+            id: this.createId(),
+            name,
+            provider: "aliyun-oss",
+            enabled: true,
+            ...DEFAULT_SETTINGS,
+        };
+    }
+
+    private createId() {
+        return `cfg-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    private migrateStorage(raw: any): ImageBedStorage {
+        if (raw?.configs && Array.isArray(raw.configs)) {
+            const configs = raw.configs.map((item: any) => ({
+                ...this.createStorageConfig(item.name || "Aliyun OSS"),
+                ...item,
+                provider: item.provider || "aliyun-oss",
+                enabled: item.enabled !== false,
+                directoryTemplate: item.directoryTemplate || DEFAULT_SETTINGS.directoryTemplate,
+            }));
+            return {
+                activeConfigId: raw.activeConfigId || configs[0]?.id || "",
+                configs: configs.length > 0 ? configs : [this.createStorageConfig("Aliyun OSS")],
+            };
+        }
+        const legacy = {
+            ...this.createStorageConfig("Aliyun OSS"),
+            ...(raw || {}),
+            id: this.createId(),
+            name: raw?.bucket ? `Aliyun OSS - ${raw.bucket}` : "Aliyun OSS",
+            provider: "aliyun-oss" as ProviderType,
         };
         return {
-            accessKeyId: readValue("accessKeyId"),
-            accessKeySecret: readValue("accessKeySecret"),
-            bucket: readValue("bucket"),
-            endpoint: readValue("endpoint"),
-            directoryTemplate: readValue("directoryTemplate") || DEFAULT_SETTINGS.directoryTemplate,
-            customDomain: readValue("customDomain"),
-            autoUploadOnSwitch: Boolean(
-                element.querySelector<HTMLInputElement>("[data-field='autoUploadOnSwitch']")?.checked,
-            ),
+            activeConfigId: legacy.id,
+            configs: [legacy],
         };
+    }
+
+    private providerLabel(provider: ProviderType) {
+        switch (provider) {
+            case "tencent-cos":
+                return this.i18n.tencentCos;
+            case "qiniu":
+                return this.i18n.qiniu;
+            case "s3":
+                return this.i18n.s3Compatible;
+            case "aliyun-oss":
+            default:
+                return this.i18n.aliyunOss;
+        }
     }
 
     private pickImageFile(): Promise<File | null> {
         return new Promise((resolve) => {
             const inputElement = document.createElement("input");
+            let settled = false;
+            const cleanup = () => {
+                window.removeEventListener("focus", handleFocus);
+                inputElement.remove();
+            };
+            const finish = (file: File | null) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                cleanup();
+                resolve(file);
+            };
+            const handleFocus = () => {
+                window.setTimeout(() => finish(inputElement.files?.[0] || null), 300);
+            };
             inputElement.type = "file";
             inputElement.accept = "image/*";
+            inputElement.className = "fn__none";
+            inputElement.addEventListener("cancel", () => finish(null), {once: true});
             inputElement.addEventListener("change", () => {
-                resolve(inputElement.files?.[0] || null);
+                finish(inputElement.files?.[0] || null);
             }, {once: true});
+            document.body.appendChild(inputElement);
+            window.addEventListener("focus", handleFocus);
             inputElement.click();
         });
     }
 
-    private renderPreviewDialog(images: ArticleImage[]) {
-        return `<div class="b3-dialog__content image-bed">
-    <div class="image-bed__toolbar">
-        <button class="b3-button b3-button--text" data-action="upload-local-all">${this.escapeHtml(
-            this.i18n.uploadAllLocalImages,
-        )}</button>
-        <button class="b3-button b3-button--outline" data-action="select-files">${this.escapeHtml(
-            this.i18n.selectImagesToUpload,
-        )}</button>
-        <input class="image-bed__file-input fn__none" type="file" accept="image/*" multiple>
-    </div>
-    <pre class="image-bed__result fn__none"></pre>
-    <div class="image-bed__list">${this.renderImageList(images)}</div>
-</div>`;
+    private renderSecretIcon(isVisible: boolean) {
+        if (isVisible) {
+            return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="m2 2 20 20"></path>
+    <path d="M10.58 10.58A2 2 0 0 0 12 14a2 2 0 0 0 1.42-.58"></path>
+    <path d="M16.68 16.68A10.94 10.94 0 0 1 12 18C7 18 3.73 14.89 2 12c.8-1.34 1.89-2.62 3.21-3.67"></path>
+    <path d="M9.88 5.09A10.72 10.72 0 0 1 12 5c5 0 8.27 3.11 10 7a13.15 13.15 0 0 1-2.54 3.33"></path>
+</svg>`;
+        }
+        return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path>
+    <circle cx="12" cy="12" r="3"></circle>
+</svg>`;
     }
 
     private renderImageList(images: ArticleImage[]) {
@@ -588,16 +626,11 @@ export default class ImageBedPlugin extends Plugin {
     <div class="image-bed__thumb"><img src="${this.escapeAttribute(image.displayUrl)}" loading="lazy"></div>
     <div class="image-bed__meta">
         <div class="image-bed__name">${this.escapeHtml(image.fileName)}</div>
-        <div class="image-bed__source" title="${this.escapeAttribute(image.source)}">${this.escapeHtml(
-                image.source,
-            )}</div>
+        <div class="image-bed__source" title="${this.escapeAttribute(image.source)}">${this.escapeHtml(image.source)}</div>
         <div class="image-bed__status">${this.escapeHtml(status)}</div>
+        <div class="image-bed__source">${this.escapeHtml(image.objectKey || "")}</div>
     </div>
-    <button class="b3-button b3-button--outline" data-action="upload-image" data-label="${this.escapeAttribute(
-                label,
-            )}" data-source="${this.escapeAttribute(image.source)}" ${canUpload ? "" : "disabled"}>${this.escapeHtml(
-                label,
-            )}</button>
+    <button class="b3-button b3-button--outline" data-action="upload-image" data-label="${this.escapeAttribute(label)}" data-source="${this.escapeAttribute(image.source)}" ${canUpload ? "" : "disabled"}>${this.escapeHtml(label)}</button>
 </div>`;
         }).join("");
     }
@@ -618,7 +651,6 @@ export default class ImageBedPlugin extends Plugin {
                 return [];
             }
 
-            let nextMarkdown = markdown;
             const results: UploadResult[] = [];
             const handledSources = new Set<string>();
             for (const image of localImages) {
@@ -630,7 +662,7 @@ export default class ImageBedPlugin extends Plugin {
                     const result = await this.uploadArticleImage(docId, image);
                     results.push(result);
                     if (result.remoteUrl) {
-                        nextMarkdown = this.replaceSource(nextMarkdown, image.source, result.remoteUrl);
+                        await this.replaceImageInDocument(docId, image.source, result.remoteUrl);
                     }
                 } catch (error) {
                     results.push({
@@ -638,9 +670,6 @@ export default class ImageBedPlugin extends Plugin {
                         error: this.toErrorMessage(error),
                     });
                 }
-            }
-            if (nextMarkdown !== markdown) {
-                await this.updateDocumentMarkdown(docId, nextMarkdown);
             }
             if (notify) {
                 showMessage(this.formatUploadSummary(results));
@@ -660,6 +689,9 @@ export default class ImageBedPlugin extends Plugin {
     }
 
     private async uploadBlob(blob: Blob, objectKey: string, contentType: string) {
+        if (this.settingsData.provider !== "aliyun-oss") {
+            throw new Error(this.i18n.providerComingSoon);
+        }
         const endpoint = this.normalizeEndpoint(this.settingsData.endpoint);
         const bucket = this.settingsData.bucket;
         const ossDate = new Date().toUTCString();
@@ -988,14 +1020,73 @@ export default class ImageBedPlugin extends Plugin {
         }, AUTO_UPLOAD_DELAY);
     };
 
+    private handlePaste = ({detail}: CustomEvent<{
+        files?: FileList | DataTransferItemList,
+        localFiles?: {path: string, size: number}[],
+        protyle?: IProtyle,
+        siyuanHTML?: string,
+        textHTML?: string,
+        textPlain?: string,
+    }>) => {
+        const docId = detail?.protyle?.block?.rootID || this.currentDocId || this.findCurrentDocIdFromDom();
+        if (docId) {
+            this.currentDocId = docId;
+        }
+        if (!docId || !this.settingsData.autoUploadOnPaste || !this.hasPastedImage(detail)) {
+            return;
+        }
+        this.schedulePasteUpload(docId);
+    };
+
+    private schedulePasteUpload(docId: string) {
+        const previousTimer = this.pasteUploadTimers.get(docId);
+        if (previousTimer) {
+            window.clearTimeout(previousTimer);
+        }
+        const timer = window.setTimeout(() => {
+            this.pasteUploadTimers.delete(docId);
+            if (!this.settingsData.autoUploadOnPaste) {
+                return;
+            }
+            if (this.uploadingDocs.has(docId)) {
+                this.schedulePasteUpload(docId);
+                return;
+            }
+            this.uploadCurrentDocumentImages(docId, false).catch((error) => {
+                this.showError(error);
+            });
+        }, PASTE_UPLOAD_DELAY);
+        this.pasteUploadTimers.set(docId, timer);
+    }
+
+    private hasPastedImage(detail?: {
+        files?: FileList | DataTransferItemList,
+        localFiles?: {path: string}[],
+        siyuanHTML?: string,
+        textHTML?: string,
+        textPlain?: string,
+    }) {
+        if (!detail) {
+            return false;
+        }
+        if (detail.localFiles?.some((file) => this.looksLikeImage(file.path))) {
+            return true;
+        }
+        if (detail.files && Array.from(detail.files as ArrayLike<File | DataTransferItem>).some((item) => {
+            return item.type?.startsWith("image/") || ("name" in item && this.looksLikeImage(item.name));
+        })) {
+            return true;
+        }
+        return [detail.textHTML, detail.siyuanHTML].some((html) => Boolean(html && /<img\b/i.test(html)))
+            || Boolean(detail.textPlain && this.looksLikeImage(detail.textPlain.trim()));
+    }
+
     private async loadSettings() {
         await this.loadData(STORAGE_NAME).catch((error) => {
             console.warn(`[${this.name}] load settings failed`, error);
         });
-        this.settingsData = {
-            ...DEFAULT_SETTINGS,
-            ...(this.data[STORAGE_NAME] || {}),
-        };
+        this.storageData = this.migrateStorage(this.data[STORAGE_NAME]);
+        this.syncActiveSettings();
     }
 
     private assertSettingsReady() {
