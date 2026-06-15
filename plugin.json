@@ -1,7 +1,7 @@
 {
-  "name": "plugin-sample",
-  "author": "Vanessa",
-  "url": "https://github.com/siyuan-note/plugin-sample",
+  "name": "siyuan-plugin-image-hub",
+  "author": "jeefeng",
+  "url": "https://github.com/jeefeng/siyuan-plugin-image-hub",
   "version": "0.1.0",
   "minAppVersion": "3.6.4",
   "kernels": [
@@ -34,12 +34,12 @@
   ],
   "disabledInPublish": false,
   "displayName": {
-    "default": "OSS Image Bed",
-    "zh_CN": "OSS 图床"
+    "default": "Image Hub",
+    "zh_CN": "思源图床"
   },
   "description": {
-    "default": "Upload local document images to Aliyun OSS and replace links automatically.",
-    "zh_CN": "自动上传文章本地图片到阿里云 OSS，并在成功后替换链接。"
+    "default": "Upload local document images to custom image beds and replace links automatically.",
+    "zh_CN": "支持自定义图床配置，自动上传文章本地图片并替换为远程链接。"
   },
   "readme": {
     "default": "README.md",
