@@ -1,5 +1,5 @@
 {
-  "name": "plugin-sample",
+  "name": "siyuan-plugin-image-hub",
   "version": "0.1.0",
   "description": "Upload local SiYuan document images to Aliyun OSS and replace links automatically.",
   "main": ".src/index.js",
