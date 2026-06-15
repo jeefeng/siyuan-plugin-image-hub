@@ -4,7 +4,6 @@ node_modules
 .eslintcache
 .dprint
 dist
-package.zip
 index.css
 index.js
 kernel.js
