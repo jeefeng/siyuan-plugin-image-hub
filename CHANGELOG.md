@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.1.1 2026-07-21
+
+* Optimize the plugin icon to satisfy the Bazaar package size limit.
+* Update platform and funding manifest fields to satisfy Bazaar validation rules.
+
 ## v0.4.8
 
 * [Upgrade devDependencies and implement kernel plugin demo](https://github.com/siyuan-note/plugin-sample/pull/42)
