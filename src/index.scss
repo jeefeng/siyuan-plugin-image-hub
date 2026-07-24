@@ -1,449 +1,980 @@
+// ── iOS 毛玻璃主题 ──────────────────────────────
+
+// 毛玻璃通用 mixin
+@mixin glass($opacity: 0.65, $blur: 20px) {
+    background: rgba(255, 255, 255, $opacity);
+    backdrop-filter: blur($blur);
+    -webkit-backdrop-filter: blur($blur);
+}
+
+// 暗色模式下玻璃底色偏黑
+@mixin glass-dark($opacity: 0.55, $blur: 24px) {
+    background: rgba(30, 30, 32, $opacity);
+    backdrop-filter: blur($blur);
+    -webkit-backdrop-filter: blur($blur);
+}
+
 .image-bed {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  height: 100%;
-  overflow: hidden;
-
-  &__toolbar {
-    align-items: center;
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  &__result {
-    background: var(--b3-theme-surface);
-    border: 1px solid var(--b3-theme-surface-lighter);
-    border-radius: 6px;
-    color: var(--b3-theme-on-surface);
-    max-height: 120px;
-    overflow: auto;
-    padding: 8px;
-    white-space: pre-wrap;
-  }
-
-  &__list {
-    display: flex;
-    flex: 1;
     flex-direction: column;
-    gap: 10px;
-    min-height: 0;
-    overflow: auto;
-    padding-right: 4px;
-  }
-
-  &__item {
-    align-items: center;
-    border: 1px solid var(--b3-theme-surface-lighter);
-    border-radius: 8px;
-    display: grid;
     gap: 12px;
-    grid-template-columns: 88px minmax(0, 1fr) auto;
-    min-height: 104px;
-    padding: 8px;
-  }
-
-  &__thumb {
-    align-items: center;
-    background: var(--b3-theme-surface);
-    border-radius: 6px;
-    display: flex;
-    height: 88px;
-    justify-content: center;
-    overflow: hidden;
-    width: 88px;
-
-    img {
-      display: block;
-      max-height: 100%;
-      max-width: 100%;
-      object-fit: contain;
-    }
-  }
-
-  &__meta {
-    min-width: 0;
-  }
-
-  &__name {
-    color: var(--b3-theme-on-background);
-    font-weight: 600;
-    line-height: 1.5;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__source {
-    color: var(--b3-theme-on-surface);
-    font-size: 12px;
-    line-height: 1.5;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &__status {
-    color: var(--b3-theme-primary);
-    font-size: 12px;
-    line-height: 1.5;
-    margin-top: 4px;
-  }
-
-  &__empty {
-    align-items: center;
-    color: var(--b3-theme-on-surface);
-    display: flex;
-    flex: 1;
-    justify-content: center;
-    min-height: 220px;
-  }
-}
-
-.image-bed-panel {
-  height: 100%;
-  overflow: hidden;
-
-  &__layout {
-    display: grid;
-    gap: 16px;
-    grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
     height: 100%;
-    min-height: 0;
-  }
-
-  &__settings,
-  &__images {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    min-height: 0;
-  }
-
-  &__settings {
-    border-right: 1px solid var(--b3-theme-surface-lighter);
-    overflow: auto;
-    padding-right: 16px;
-  }
-
-  &__images {
     overflow: hidden;
-  }
 
-  &__section-title {
-    color: var(--b3-theme-on-background);
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 1.5;
-  }
-
-  &__field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-
-    span {
-      color: var(--b3-theme-on-surface);
-      font-size: 12px;
-      line-height: 1.5;
-    }
-  }
-
-  &__secret {
-    align-items: center;
-    display: grid;
-    gap: 6px;
-    grid-template-columns: minmax(0, 1fr) 32px;
-  }
-
-  &__secret-toggle {
-    align-items: center;
-    display: flex;
-    height: 32px;
-    justify-content: center;
-    padding: 0;
-    width: 32px;
-
-    svg {
-      height: 16px;
-      width: 16px;
-    }
-  }
-
-  &__switch {
-    align-items: center;
-    color: var(--b3-theme-on-background);
-    display: flex;
-    gap: 8px;
-    line-height: 1.5;
-  }
-
-  &__actions {
-    display: flex;
-  }
-
-  &__hint {
-    color: var(--b3-theme-on-surface);
-    font-size: 12px;
-    line-height: 1.6;
-  }
-}
-
-.image-bed-manager-dialog {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.image-bed-manager {
-  background: var(--b3-theme-background);
-  color: var(--b3-theme-on-background);
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  height: 100%;
-  min-height: 0;
-  width: 100%;
-
-  &__sidebar {
-    border-right: 1px solid var(--b3-theme-surface-lighter);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-width: 0;
-    padding: 14px 10px;
-  }
-
-  &__brand {
-    align-items: center;
-    display: flex;
-    font-weight: 600;
-    gap: 8px;
-    min-height: 36px;
-    padding: 0 8px 10px;
-
-    svg {
-      height: 18px;
-      width: 18px;
-    }
-  }
-
-  &__nav,
-  .image-bed-config-card {
-    background: transparent;
-    border: 0;
-    border-radius: 6px;
-    color: var(--b3-theme-on-background);
-    cursor: pointer;
-    line-height: 1.5;
-    padding: 8px 10px;
-    text-align: left;
-
-    &.is-active,
-    &:hover {
-      background: var(--b3-list-hover);
-    }
-  }
-
-  &__main {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    min-width: 0;
-  }
-
-  &__header {
-    align-items: center;
-    border-bottom: 1px solid var(--b3-theme-surface-lighter);
-    display: flex;
-    gap: 12px;
-    justify-content: space-between;
-    min-height: 64px;
-    padding: 10px 16px;
-  }
-
-  &__title {
-    font-size: 18px;
-    font-weight: 600;
-    line-height: 1.4;
-  }
-
-  &__subtitle {
-    color: var(--b3-theme-on-surface);
-    font-size: 12px;
-    line-height: 1.5;
-  }
-
-  &__header-actions,
-  &__config-actions,
-  &__form-actions {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-
-  &__view {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: 12px;
-    min-height: 0;
-    overflow: hidden;
-    padding: 16px;
-  }
-
-  &__stats {
-    display: grid;
-    gap: 10px;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  &__stat {
-    border: 1px solid var(--b3-theme-surface-lighter);
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    min-width: 0;
-    padding: 10px;
-
-    span {
-      color: var(--b3-theme-on-surface);
-      font-size: 12px;
+    &__toolbar {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
-    strong {
-      font-size: 16px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    &__result {
+        @include glass(0.5, 12px);
+        border: 0.5px solid rgba(255, 255, 255, 0.3);
+        border-radius: 12px;
+        color: var(--b3-theme-on-surface);
+        max-height: 120px;
+        overflow: auto;
+        padding: 10px 14px;
+        white-space: pre-wrap;
+        font-size: 13px;
     }
-  }
 
-  &__notice,
-  &__hint {
-    color: var(--b3-theme-on-surface);
-    font-size: 12px;
-    line-height: 1.6;
-  }
-
-  &__config-view {
-    display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
-  }
-
-  &__config-list {
-    border-right: 1px solid var(--b3-theme-surface-lighter);
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    min-height: 0;
-    overflow: auto;
-    padding-right: 14px;
-  }
-
-  &__form {
-    display: grid;
-    gap: 12px;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    min-height: 0;
-    overflow: auto;
-    padding-left: 2px;
-
-    .image-bed-panel__switch,
-    .image-bed-manager__form-actions,
-    .image-bed-manager__hint {
-      grid-column: 1 / -1;
+    &__list {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 10px;
+        min-height: 0;
+        overflow: auto;
+        padding-right: 6px;
     }
-  }
-}
 
-.image-bed-config-card {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-
-  small {
-    color: var(--b3-theme-on-surface);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-}
-
-@media (max-width: 720px) {
-  .image-bed {
     &__item {
-      align-items: stretch;
-      grid-template-columns: 72px minmax(0, 1fr);
+        @include glass(0.45, 16px);
+        border: 0.5px solid rgba(255, 255, 255, 0.25);
+        border-radius: 14px;
+        display: grid;
+        gap: 12px;
+        grid-template-columns: 80px minmax(0, 1fr) auto;
+        min-height: 96px;
+        padding: 10px;
+        transition: transform 0.15s ease, box-shadow 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+
+        &:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+        }
     }
 
     &__thumb {
-      height: 72px;
-      width: 72px;
+        align-items: center;
+        @include glass(0.35, 14px);
+        border: 0.5px solid rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        display: flex;
+        height: 76px;
+        justify-content: center;
+        overflow: hidden;
+        width: 80px;
+
+        img {
+            display: block;
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+        }
     }
 
-    &__item > .b3-button {
-      grid-column: 1 / -1;
-      justify-content: center;
+    &__meta {
+        min-width: 0;
     }
-  }
 
-  .image-bed-panel {
-    overflow: auto;
+    &__name {
+        color: var(--b3-theme-on-background);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__source {
+        color: var(--b3-theme-on-surface);
+        font-size: 12px;
+        line-height: 1.4;
+        opacity: 0.7;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    &__status {
+        color: var(--b3-theme-primary);
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 1.4;
+        margin-top: 3px;
+    }
+
+    &__empty {
+        align-items: center;
+        color: var(--b3-theme-on-surface);
+        display: flex;
+        flex: 1;
+        font-size: 14px;
+        justify-content: center;
+        min-height: 220px;
+        opacity: 0.6;
+    }
+}
+
+.image-bed-panel {
+    height: 100%;
+    overflow: hidden;
 
     &__layout {
-      grid-template-columns: 1fr;
-      height: auto;
+        display: grid;
+        gap: 16px;
+        grid-template-columns: minmax(260px, 320px) minmax(0, 1fr);
+        height: 100%;
+        min-height: 0;
+    }
+
+    &__settings,
+    &__images {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 0;
     }
 
     &__settings {
-      border-right: 0;
-      border-bottom: 1px solid var(--b3-theme-surface-lighter);
-      padding-bottom: 16px;
-      padding-right: 0;
+        border-right: 0.5px solid rgba(255, 255, 255, 0.15);
+        overflow: auto;
+        padding-right: 16px;
     }
-  }
 
-  .image-bed-manager {
-    grid-template-columns: 1fr;
+    &__images {
+        overflow: hidden;
+    }
+
+    &__section-title {
+        color: var(--b3-theme-on-background);
+        font-size: 14px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    &__field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+
+        span {
+            color: var(--b3-theme-on-surface);
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.4;
+            opacity: 0.8;
+        }
+    }
+
+    &__secret {
+        align-items: center;
+        display: grid;
+        gap: 6px;
+        grid-template-columns: minmax(0, 1fr) 32px;
+    }
+
+    &__secret-toggle {
+        align-items: center;
+        @include glass(0.3, 12px);
+        border: 0.5px solid rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        display: flex;
+        height: 32px;
+        justify-content: center;
+        padding: 0;
+        width: 32px;
+        cursor: pointer;
+        transition: background 0.15s ease;
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        svg {
+            height: 16px;
+            width: 16px;
+        }
+    }
+
+    &__switch {
+        align-items: center;
+        color: var(--b3-theme-on-background);
+        display: flex;
+        gap: 10px;
+        font-size: 14px;
+        line-height: 1.4;
+        padding: 4px 0;
+    }
+
+    &__actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    &__hint {
+        color: var(--b3-theme-on-surface);
+        font-size: 12px;
+        line-height: 1.5;
+        opacity: 0.6;
+    }
+}
+
+// ── 对话框 ──────────────────────────────────────
+
+.image-bed-manager-dialog {
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.image-bed-manager {
+    // 主容器：多层毛玻璃叠加
+    @include glass(0.55, 28px);
+    border: 0.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 16px;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.1);
+    color: var(--b3-theme-on-background);
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    width: 100%;
 
     &__sidebar {
-      border-bottom: 1px solid var(--b3-theme-surface-lighter);
-      border-right: 0;
-      flex-direction: row;
-      overflow: auto;
+        @include glass(0.35, 16px);
+        border-right: 0.5px solid rgba(255, 255, 255, 0.15);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        padding: 16px 10px;
     }
 
     &__brand {
-      padding: 0 8px;
-      white-space: nowrap;
+        align-items: center;
+        display: flex;
+        font-size: 15px;
+        font-weight: 700;
+        gap: 8px;
+        min-height: 36px;
+        padding: 0 10px 14px;
+
+        svg {
+            height: 18px;
+            width: 18px;
+        }
+    }
+
+    &__nav,
+    .image-bed-config-card {
+        @include glass(0.2, 10px);
+        border: 0.5px solid transparent;
+        border-radius: 10px;
+        color: var(--b3-theme-on-background);
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        line-height: 1.4;
+        padding: 10px 12px;
+        text-align: left;
+        transition: all 0.15s ease;
+
+        &.is-active {
+            @include glass(0.4, 16px);
+            border-color: rgba(255, 255, 255, 0.2);
+            font-weight: 600;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+        }
+
+        &:hover:not(.is-active) {
+            background: rgba(255, 255, 255, 0.08);
+        }
+    }
+
+    &__main {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        min-width: 0;
     }
 
     &__header {
-      align-items: stretch;
-      flex-direction: column;
+        align-items: center;
+        border-bottom: 0.5px solid rgba(255, 255, 255, 0.15);
+        display: flex;
+        gap: 12px;
+        justify-content: space-between;
+        min-height: 56px;
+        padding: 8px 16px;
+    }
+
+    &__title {
+        font-size: 17px;
+        font-weight: 700;
+        line-height: 1.3;
+        letter-spacing: -0.02em;
+    }
+
+    &__subtitle {
+        color: var(--b3-theme-on-surface);
+        font-size: 12px;
+        line-height: 1.4;
+        opacity: 0.6;
+        margin-top: 1px;
+    }
+
+    &__header-actions,
+    &__config-actions,
+    &__form-actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    &__view {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: 12px;
+        min-height: 0;
+        overflow: hidden;
+        padding: 16px;
     }
 
     &__stats {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+        display: grid;
+        gap: 10px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    &__stat {
+        @include glass(0.35, 14px);
+        border: 0.5px solid rgba(255, 255, 255, 0.15);
+        border-radius: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+        padding: 12px;
+
+        span {
+            color: var(--b3-theme-on-surface);
+            font-size: 12px;
+            font-weight: 500;
+            opacity: 0.7;
+        }
+
+        strong {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+    }
+
+    &__notice,
+    &__hint {
+        color: var(--b3-theme-on-surface);
+        font-size: 13px;
+        line-height: 1.5;
+        opacity: 0.6;
     }
 
     &__config-view {
-      grid-template-columns: 1fr;
+        display: grid;
+        gap: 0;
+        grid-template-columns: 180px minmax(0, 1fr);
     }
 
     &__config-list {
-      border-bottom: 1px solid var(--b3-theme-surface-lighter);
-      border-right: 0;
-      max-height: 220px;
-      padding-bottom: 12px;
-      padding-right: 0;
+        @include glass(0.2, 12px);
+        border-right: 0.5px solid rgba(255, 255, 255, 0.12);
+        border-radius: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-height: 0;
+        overflow: auto;
+        padding: 8px 14px 8px 0;
+        margin-right: 2px;
     }
 
     &__form {
-      grid-template-columns: 1fr;
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        min-height: 0;
+        overflow: auto;
+        padding: 0 0 0 14px;
+
+        .image-bed-panel__switch,
+        .image-bed-manager__form-actions,
+        .image-bed-manager__hint {
+            grid-column: 1 / -1;
+        }
     }
-  }
+}
+
+.image-bed-config-card {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+
+    small {
+        color: var(--b3-theme-on-surface);
+        font-size: 11px;
+        opacity: 0.6;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+// ── iOS 风格选择器 ──────────────────────────────
+
+%ios-select {
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1.5 1.5l4 4 4-4' stroke='currentColor' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round' opacity='0.5'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
+    padding-right: 30px !important;
+    cursor: pointer;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+    &:focus {
+        border-color: var(--b3-theme-primary) !important;
+        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15) !important;
+        outline: none;
+    }
+}
+
+select.b3-select {
+    @include glass(0.3, 12px);
+    border: 0.5px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    padding: 8px 30px 8px 12px !important;
+    color: var(--b3-theme-on-background) !important;
+    min-height: 36px;
+    @extend %ios-select;
+}
+
+// ── iOS 风格复选框 ──────────────────────────────
+
+.image-bed-panel__switch {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    padding: 6px 0;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+
+    // 隐藏原生 checkbox
+    input[type="checkbox"] {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        padding: 0;
+        overflow: hidden;
+        clip: rect(0,0,0,0);
+        border: 0;
+    }
+
+    // 自定义 switch 滑块
+    input[type="checkbox"] + span::before {
+        content: "";
+        display: inline-block;
+        width: 48px;
+        height: 30px;
+        border-radius: 15px;
+        background: rgba(120, 120, 128, 0.24);
+        transition: background 0.25s ease;
+        vertical-align: middle;
+        margin-right: 8px;
+        flex-shrink: 0;
+        position: relative;
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    // 滑块上的小圆点
+    input[type="checkbox"] + span::after {
+        content: "";
+        position: absolute;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background: #fff;
+        box-shadow:
+            0 1px 4px rgba(0, 0, 0, 0.12),
+            0 0 0 0.5px rgba(0, 0, 0, 0.04);
+        transition: transform 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);
+        left: 2px;
+        top: 2px;
+    }
+
+    // 选中的背景色
+    input[type="checkbox"]:checked + span::before {
+        background: #34c759;
+    }
+
+    // 选中的圆点位置（右移）
+    input[type="checkbox"]:checked + span::after {
+        transform: translateX(18px);
+    }
+
+    span {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        position: relative;
+        color: var(--b3-theme-on-background);
+    }
+}
+
+// 普通复选框（如果有其他用途）
+input[type="checkbox"]:not(.image-bed-panel__switch input) {
+    @include glass(0.2, 8px);
+    border: 0.5px solid rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, border-color 0.15s ease;
+
+    &:checked {
+        background: var(--b3-theme-primary);
+        border-color: var(--b3-theme-primary);
+    }
+
+    &:checked::after {
+        content: "";
+        width: 10px;
+        height: 5px;
+        border-left: 2px solid #fff;
+        border-bottom: 2px solid #fff;
+        transform: rotate(-45deg) translateY(-1px);
+    }
+}
+
+// ── Element UI 按钮风格 ─────────────────────────
+
+.b3-button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    padding: 8px 16px !important;
+    border: 1px solid transparent !important;
+    transition: all 0.2s ease !important;
+    cursor: pointer !important;
+    line-height: 1.4 !important;
+    user-select: none !important;
+
+    &:active {
+        transform: scale(0.97);
+    }
+
+    &:disabled {
+        cursor: not-allowed !important;
+        opacity: 0.55 !important;
+    }
+
+    // Element UI — default （白底灰边框）
+    &--outline {
+        color: #606266 !important;
+        background: #fff !important;
+        border-color: #dcdfe6 !important;
+
+        &:hover {
+            color: #409eff !important;
+            border-color: #c6e2ff !important;
+            background: #ecf5ff !important;
+        }
+
+        &:active {
+            color: #3a8ee6 !important;
+            border-color: #3a8ee6 !important;
+            background: #fff !important;
+        }
+    }
+
+    // Element UI — primary（蓝色实心）
+    &--primary {
+        color: #fff !important;
+        background: #409eff !important;
+        border-color: #409eff !important;
+
+        &:hover {
+            background: #66b1ff !important;
+            border-color: #66b1ff !important;
+        }
+
+        &:active {
+            background: #3a8ee6 !important;
+            border-color: #3a8ee6 !important;
+        }
+    }
+
+    // Element UI — success（绿色实心）
+    &--upload {
+        color: #fff !important;
+        background: #67c23a !important;
+        border-color: #67c23a !important;
+
+        &:hover {
+            background: #85ce61 !important;
+            border-color: #85ce61 !important;
+        }
+
+        &:active {
+            background: #5daf34 !important;
+            border-color: #5daf34 !important;
+        }
+    }
+
+    // Element UI — danger（红色实心）
+    &--danger {
+        color: #fff !important;
+        background: #f56c6c !important;
+        border-color: #f56c6c !important;
+
+        &:hover {
+            background: #f78989 !important;
+            border-color: #f78989 !important;
+        }
+
+        &:active {
+            background: #dd6161 !important;
+            border-color: #dd6161 !important;
+        }
+    }
+
+    // Element UI — text（透明背景 + 蓝色文字）
+    &--text {
+        color: #409eff !important;
+        background: transparent !important;
+        border-color: transparent !important;
+
+        &:hover {
+            color: #66b1ff !important;
+        }
+
+        &:active {
+            color: #3a8ee6 !important;
+        }
+    }
+}
+
+// ── 表单输入框 iOS 风格 ──────────────────────────
+
+.b3-text-field {
+    @include glass(0.25, 12px);
+    border: 0.5px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 10px !important;
+    font-size: 14px !important;
+    padding: 10px 12px !important;
+    transition: border-color 0.2s ease !important;
+
+    &:focus {
+        border-color: var(--b3-theme-primary) !important;
+        box-shadow: 0 0 0 3px rgba(var(--b3-theme-primary), 0.12) !important;
+    }
+}
+
+// ── 暗色模式 ────────────────────────────────────
+
+body.theme--dark,
+body[data-theme-mode="dark"] {
+    .image-bed-manager {
+        @include glass-dark(0.55, 28px);
+
+        &__sidebar {
+            @include glass-dark(0.35, 16px);
+        }
+
+        &__nav,
+        .image-bed-config-card {
+            @include glass-dark(0.15, 10px);
+
+            &.is-active {
+                @include glass-dark(0.5, 16px);
+                border-color: rgba(255, 255, 255, 0.12);
+            }
+        }
+
+        &__stat {
+            @include glass-dark(0.35, 14px);
+        }
+
+        &__config-list {
+            @include glass-dark(0.2, 12px);
+        }
+    }
+
+    .image-bed {
+        &__item {
+            @include glass-dark(0.45, 16px);
+        }
+
+        &__thumb {
+            @include glass-dark(0.35, 14px);
+        }
+
+        &__result {
+            @include glass-dark(0.5, 12px);
+        }
+    }
+
+    .b3-text-field {
+        @include glass-dark(0.25, 12px);
+    }
+
+    .b3-button--outline {
+        @include glass-dark(0.25, 12px);
+    }
+
+    .b3-button--primary {
+        @include glass-dark(0.35, 14px);
+        border-color: rgba(0, 122, 255, 0.3) !important;
+    }
+
+    .b3-button--upload {
+        @include glass-dark(0.3, 14px);
+        border-color: rgba(52, 199, 89, 0.3) !important;
+    }
+
+    .b3-button {
+        // dark — outline
+        &--outline {
+            color: #e5eaf3 !important;
+            background: rgba(255, 255, 255, 0.06) !important;
+            border-color: rgba(255, 255, 255, 0.15) !important;
+
+            &:hover {
+                color: #409eff !important;
+                border-color: #409eff !important;
+                background: rgba(64, 158, 255, 0.1) !important;
+            }
+
+            &:active {
+                color: #66b1ff !important;
+                border-color: #66b1ff !important;
+                background: transparent !important;
+            }
+        }
+
+        // dark — primary
+        &--primary {
+            background: #2d6bb4 !important;
+            border-color: #2d6bb4 !important;
+
+            &:hover {
+                background: #409eff !important;
+                border-color: #409eff !important;
+            }
+
+            &:active {
+                background: #3a8ee6 !important;
+                border-color: #3a8ee6 !important;
+            }
+        }
+
+        // dark — upload
+        &--upload {
+            background: #529b2e !important;
+            border-color: #529b2e !important;
+
+            &:hover {
+                background: #67c23a !important;
+                border-color: #67c23a !important;
+            }
+
+            &:active {
+                background: #5daf34 !important;
+                border-color: #5daf34 !important;
+            }
+        }
+
+        // dark — danger
+        &--danger {
+            background: #c45656 !important;
+            border-color: #c45656 !important;
+
+            &:hover {
+                background: #f56c6c !important;
+                border-color: #f56c6c !important;
+            }
+
+            &:active {
+                background: #dd6161 !important;
+                border-color: #dd6161 !important;
+            }
+        }
+
+        // dark — text
+        &--text {
+            color: #66b1ff !important;
+
+            &:hover {
+                color: #8cc5ff !important;
+            }
+
+            &:active {
+                color: #409eff !important;
+            }
+        }
+    }
+
+    select.b3-select {
+        @include glass-dark(0.3, 12px);
+    }
+
+    .image-bed-panel__secret-toggle {
+        @include glass-dark(0.3, 12px);
+    }
+
+    // 暗色模式 switch
+    .image-bed-panel__switch input[type="checkbox"] + span::before {
+        background: rgba(120, 120, 128, 0.4);
+    }
+
+    .image-bed-panel__switch input[type="checkbox"]:checked + span::before {
+        background: #30d158;
+    }
+
+    .image-bed-panel__switch input[type="checkbox"] + span::after {
+        background: rgba(255, 255, 255, 0.9);
+        box-shadow:
+            0 1px 4px rgba(0, 0, 0, 0.2),
+            0 0 0 0.5px rgba(255, 255, 255, 0.04);
+    }
+
+    // 暗色模式普通 checkbox
+    input[type="checkbox"]:not(.image-bed-panel__switch input) {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
+    }
+}
+
+// ── 响应式：移动端 ──────────────────────────────
+
+@media (max-width: 720px) {
+    .image-bed {
+        &__item {
+            align-items: stretch;
+            grid-template-columns: 72px minmax(0, 1fr);
+
+            > .b3-button {
+                grid-column: 1 / -1;
+                justify-content: center;
+            }
+        }
+
+        &__thumb {
+            height: 72px;
+            width: 72px;
+        }
+    }
+
+    .image-bed-panel {
+        overflow: auto;
+
+        &__layout {
+            grid-template-columns: 1fr;
+            height: auto;
+        }
+
+        &__settings {
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.15);
+            border-right: 0;
+            padding-bottom: 16px;
+            padding-right: 0;
+        }
+    }
+
+    .image-bed-manager {
+        border-radius: 12px;
+        grid-template-columns: 1fr;
+
+        &__sidebar {
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.12);
+            border-right: 0;
+            flex-direction: row;
+            gap: 4px;
+            overflow: auto;
+            padding: 10px;
+        }
+
+        &__brand {
+            padding: 0 6px;
+            white-space: nowrap;
+        }
+
+        &__nav {
+            font-size: 13px;
+            padding: 8px 10px;
+            white-space: nowrap;
+        }
+
+        &__header {
+            align-items: stretch;
+            flex-direction: column;
+        }
+
+        &__stats {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        &__config-view {
+            grid-template-columns: 1fr;
+        }
+
+        &__config-list {
+            border-bottom: 0.5px solid rgba(255, 255, 255, 0.12);
+            border-right: 0;
+            max-height: 200px;
+            padding-bottom: 10px;
+            padding-right: 0;
+        }
+
+        &__form {
+            grid-template-columns: 1fr;
+        }
+    }
 }

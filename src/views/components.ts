@@ -10,16 +10,18 @@ import {escapeAttribute, escapeHtml} from "../ui";
 /** 显示/隐藏密钥图标 */
 export function secretIcon(isVisible: boolean): string {
     if (isVisible) {
+        // 睁眼 — 密码可见
         return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="m2 2 20 20"></path>
-    <path d="M10.58 10.58A2 2 0 0 0 12 14a2 2 0 0 0 1.42-.58"></path>
-    <path d="M16.68 16.68A10.94 10.94 0 0 1 12 18C7 18 3.73 14.89 2 12c.8-1.34 1.89-2.62 3.21-3.67"></path>
-    <path d="M9.88 5.09A10.72 10.72 0 0 1 12 5c5 0 8.27 3.11 10 7a13.15 13.15 0 0 1-2.54 3.33"></path>
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+    <circle cx="12" cy="12" r="3"></circle>
 </svg>`;
     }
+    // 闭眼 — 密码隐藏
     return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"></path>
-    <circle cx="12" cy="12" r="3"></circle>
+    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"></path>
+    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"></path>
+    <line x1="1" y1="1" x2="23" y2="23"></line>
+    <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"></path>
 </svg>`;
 }
 
@@ -68,7 +70,7 @@ export function header(
     <div class="image-bed-manager__header-actions">
         <select class="b3-select" data-action="switch-active-config">${opts}</select>
         <button class="b3-button b3-button--outline" data-action="refresh-manager">${escapeHtml(i18n.refreshImages)}</button>
-        <button class="b3-button b3-button--text" data-action="upload-current">${escapeHtml(i18n.uploadCurrentDocImages)}</button>
+        <button class="b3-button b3-button--primary" data-action="upload-current">${escapeHtml(i18n.uploadCurrentDocImages)}</button>
     </div>
 </header>`;
 }
@@ -95,7 +97,7 @@ export function imageItem(image: ArticleImage, i18n: Record<string, string>): st
         <div class="image-bed__status">${escapeHtml(status)}</div>
         ${image.objectKey ? `<div class="image-bed__source">${escapeHtml(image.objectKey)}</div>` : ""}
     </div>
-    <button class="b3-button b3-button--outline" data-action="upload-image" data-label="${escapeAttribute(btnLabel)}" data-source="${escapeAttribute(image.source)}"${canUpload ? "" : " disabled"}>${escapeHtml(btnLabel)}</button>
+    <button class="b3-button b3-button--upload" data-action="upload-image" data-label="${escapeAttribute(btnLabel)}" data-source="${escapeAttribute(image.source)}"${canUpload ? "" : " disabled"}>${escapeHtml(btnLabel)}</button>
 </div>`;
 }
 
@@ -232,9 +234,9 @@ export function configView(
     <form class="image-bed-manager__form">
         ${configForm(active, i18n)}
         <div class="image-bed-manager__form-actions">
-            <button class="b3-button b3-button--text" type="button" data-action="save-config">${escapeHtml(i18n.saveConfig)}</button>
+            <button class="b3-button b3-button--primary" type="button" data-action="save-config">${escapeHtml(i18n.saveConfig)}</button>
             <button class="b3-button b3-button--outline" type="button" data-action="test-config">${escapeHtml(i18n.testConnection)}</button>
-            <button class="b3-button b3-button--outline" type="button" data-action="delete-config">${escapeHtml(i18n.deleteConfig)}</button>
+            <button class="b3-button b3-button--danger" type="button" data-action="delete-config">${escapeHtml(i18n.deleteConfig)}</button>
         </div>
         <div class="image-bed-manager__hint">${escapeHtml(i18n.multiProviderHint)}</div>
     </form>

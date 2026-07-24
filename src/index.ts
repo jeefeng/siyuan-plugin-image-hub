@@ -72,8 +72,8 @@ export default class ImageBedPlugin extends Plugin {
             this,
             this.isMobile,
             this.i18n.managerTitle,
-            this.isMobile ? "94vw" : "1080px",
-            this.isMobile ? "86vh" : "760px",
+            this.isMobile ? "92vw" : "1046px",
+            this.isMobile ? "84vh" : "668px",
         );
     }
 
