@@ -52,8 +52,14 @@ export class ManagerDialog {
             ? this.plugin.getCurrentDocId() || findCurrentDocIdFromDom()
             : "";
         const images = docId ? this.plugin.extractImages(await this.plugin.getDocumentMarkdown(docId)) : [];
-        const config = this.plugin.getActiveConfig();
         const i18n = this.plugin.i18n;
+        // 顶部始终显示启用的配置
+        const enabledConfig = this.plugin.storageData.configs.find((c) => c.enabled);
+        const hasEnabled = Boolean(enabledConfig);
+        // 当前编辑/预览使用的配置（文章视图用启用的，配置视图用选中的）
+        const config = this.view === "article"
+            ? (enabledConfig || this.plugin.getActiveConfig())
+            : this.plugin.getActiveConfig();
 
         const navs = [
             {view: "article" as ManagerView, label: i18n.articleHome, active: this.view === "article"},
@@ -68,10 +74,10 @@ export class ManagerDialog {
             C.sidebar(i18n.managerTitle, navs),
             C.header(
                 this.view === "article" ? i18n.articleHome : i18n.storageConfigs,
-                this.subtitle(config, i18n),
-                this.plugin.storageData.configs,
-                this.plugin.storageData.activeConfigId,
+                this.subtitle(enabledConfig, i18n),
                 i18n,
+                hasEnabled,
+                enabledConfig?.name,
             ) + main,
             i18n,
         );
@@ -95,7 +101,8 @@ export class ManagerDialog {
         );
     }
 
-    private subtitle(config: StorageConfig, i18n: Record<string, string>): string {
+    private subtitle(config: StorageConfig | undefined, i18n: Record<string, string>): string {
+        if (!config) return "";
         return `${this.providerLabel(config.provider, i18n)} / ${config.bucket || i18n.bucketNotSet}`;
     }
 
@@ -121,8 +128,13 @@ export class ManagerDialog {
             return;
         }
 
+        // 启用开关由 change 事件处理，click 跳过避免重复
+        if (target.closest('[data-action="toggle-config-enabled"]')) {
+            return;
+        }
+
         // 其他按钮操作（data-action）
-        const actionBtn = target.closest<HTMLElement>("[data-action]");
+        const actionBtn = target.closest<HTMLButtonElement>("[data-action]");
         if (!actionBtn) return;
         const action = actionBtn.dataset.action;
         switch (action) {
@@ -156,14 +168,16 @@ export class ManagerDialog {
             case "delete-config":
                 this.deleteConfig();
                 return;
+            case "toggle-config-enabled":
+                this.toggleConfigEnabled();
+                return;
         }
     };
 
     private handleChange = (e: Event): void => {
         const target = e.target as HTMLElement;
-        const action = target.dataset.action;
-        if (action === "switch-active-config") {
-            this.switchConfig(target as HTMLSelectElement);
+        if (target.matches('input[data-field="enabled"]')) {
+            this.toggleConfigEnabled();
         }
     };
 
@@ -230,6 +244,22 @@ export class ManagerDialog {
         await this.render();
     }
 
+    // ── 启用/禁用 ─────────────────────────────────
+
+    private async toggleConfigEnabled(): Promise<void> {
+        const active = this.plugin.getActiveConfig();
+        if (active.enabled) {
+            // 禁用：直接关掉
+            active.enabled = false;
+        } else {
+            // 启用：先关掉其他所有
+            this.plugin.storageData.configs.forEach((c) => {c.enabled = false;});
+            active.enabled = true;
+        }
+        await this.plugin.saveStorage();
+        await this.render();
+    }
+
     // ── 上传操作 ──────────────────────────────────
 
     private async handleUploadCurrent(): Promise<void> {
@@ -250,7 +280,7 @@ export class ManagerDialog {
         }
     }
 
-    private async handleUploadImage(btn: HTMLElement): Promise<void> {
+    private async handleUploadImage(btn: HTMLButtonElement): Promise<void> {
         const label = btn.dataset.label || this.plugin.i18n.uploadAndReplace;
         btn.disabled = true;
         btn.textContent = this.plugin.i18n.uploading;
@@ -278,7 +308,7 @@ export class ManagerDialog {
         }
     }
 
-    private async overwriteImage(image: ArticleImage, btn: HTMLElement): Promise<void> {
+    private async overwriteImage(image: ArticleImage, btn: HTMLButtonElement): Promise<void> {
         if (!image.objectKey) throw new Error(this.plugin.i18n.imageNoLongerExists);
         const file = await this.plugin.pickImageFile();
         if (!file) {

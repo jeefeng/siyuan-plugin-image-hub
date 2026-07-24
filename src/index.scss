@@ -1,18 +1,23 @@
-// ── iOS 毛玻璃主题 ──────────────────────────────
+// ── Element UI 风格主题 ──────────────────────────
 
-// 毛玻璃通用 mixin
-@mixin glass($opacity: 0.65, $blur: 20px) {
-    background: rgba(255, 255, 255, $opacity);
-    backdrop-filter: blur($blur);
-    -webkit-backdrop-filter: blur($blur);
-}
-
-// 暗色模式下玻璃底色偏黑
-@mixin glass-dark($opacity: 0.55, $blur: 24px) {
-    background: rgba(30, 30, 32, $opacity);
-    backdrop-filter: blur($blur);
-    -webkit-backdrop-filter: blur($blur);
-}
+// Element UI 基础色
+$color-primary: #409eff;
+$color-success: #67c23a;
+$color-danger: #f56c6c;
+$color-info: #909399;
+$color-text-primary: #303133;
+$color-text-regular: #606266;
+$color-text-secondary: #909399;
+$color-text-placeholder: #c0c4cc;
+$color-border-base: #dcdfe6;
+$color-border-light: #e4e7ed;
+$color-border-lighter: #ebeef5;
+$color-border-extra-light: #f2f6fc;
+$color-bg: #f5f7fa;
+$color-white: #fff;
+$border-radius-base: 4px;
+$border-radius-small: 2px;
+$border-radius-round: 20px;
 
 .image-bed {
     display: flex;
@@ -29,10 +34,10 @@
     }
 
     &__result {
-        @include glass(0.5, 12px);
-        border: 0.5px solid rgba(255, 255, 255, 0.3);
-        border-radius: 12px;
-        color: var(--b3-theme-on-surface);
+        background: $color-bg;
+        border: 1px solid $color-border-lighter;
+        border-radius: $border-radius-base;
+        color: $color-text-regular;
         max-height: 120px;
         overflow: auto;
         padding: 10px 14px;
@@ -51,30 +56,28 @@
     }
 
     &__item {
-        @include glass(0.45, 16px);
-        border: 0.5px solid rgba(255, 255, 255, 0.25);
-        border-radius: 14px;
+        background: $color-white;
+        border: 1px solid $color-border-lighter;
+        border-radius: $border-radius-base;
         display: grid;
         gap: 12px;
         grid-template-columns: 80px minmax(0, 1fr) auto;
-        min-height: 96px;
+        min-height: 88px;
         padding: 10px;
-        transition: transform 0.15s ease, box-shadow 0.2s ease;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+        transition: box-shadow 0.2s ease;
 
         &:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
         }
     }
 
     &__thumb {
         align-items: center;
-        @include glass(0.35, 14px);
-        border: 0.5px solid rgba(255, 255, 255, 0.2);
-        border-radius: 10px;
+        background: $color-bg;
+        border: 1px solid $color-border-lighter;
+        border-radius: $border-radius-base;
         display: flex;
-        height: 76px;
+        height: 68px;
         justify-content: center;
         overflow: hidden;
         width: 80px;
@@ -92,7 +95,7 @@
     }
 
     &__name {
-        color: var(--b3-theme-on-background);
+        color: $color-text-primary;
         font-size: 14px;
         font-weight: 600;
         line-height: 1.4;
@@ -102,17 +105,16 @@
     }
 
     &__source {
-        color: var(--b3-theme-on-surface);
+        color: $color-text-secondary;
         font-size: 12px;
         line-height: 1.4;
-        opacity: 0.7;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
 
     &__status {
-        color: var(--b3-theme-primary);
+        color: $color-primary;
         font-size: 12px;
         font-weight: 500;
         line-height: 1.4;
@@ -121,13 +123,12 @@
 
     &__empty {
         align-items: center;
-        color: var(--b3-theme-on-surface);
+        color: $color-text-placeholder;
         display: flex;
         flex: 1;
         font-size: 14px;
         justify-content: center;
         min-height: 220px;
-        opacity: 0.6;
     }
 }
 
@@ -152,7 +153,7 @@
     }
 
     &__settings {
-        border-right: 0.5px solid rgba(255, 255, 255, 0.15);
+        border-right: 1px solid $color-border-lighter;
         overflow: auto;
         padding-right: 16px;
     }
@@ -162,7 +163,7 @@
     }
 
     &__section-title {
-        color: var(--b3-theme-on-background);
+        color: $color-text-primary;
         font-size: 14px;
         font-weight: 600;
         line-height: 1.4;
@@ -174,11 +175,9 @@
         gap: 6px;
 
         span {
-            color: var(--b3-theme-on-surface);
+            color: $color-text-regular;
             font-size: 12px;
-            font-weight: 500;
             line-height: 1.4;
-            opacity: 0.8;
         }
     }
 
@@ -191,19 +190,21 @@
 
     &__secret-toggle {
         align-items: center;
-        @include glass(0.3, 12px);
-        border: 0.5px solid rgba(255, 255, 255, 0.2);
-        border-radius: 8px;
+        background: $color-white;
+        border: 1px solid $color-border-base;
+        border-radius: $border-radius-base;
         display: flex;
         height: 32px;
         justify-content: center;
         padding: 0;
         width: 32px;
         cursor: pointer;
-        transition: background 0.15s ease;
+        color: $color-text-secondary;
+        transition: border-color 0.2s ease, color 0.2s ease;
 
         &:hover {
-            background: rgba(255, 255, 255, 0.15);
+            border-color: $color-primary;
+            color: $color-primary;
         }
 
         svg {
@@ -214,7 +215,7 @@
 
     &__switch {
         align-items: center;
-        color: var(--b3-theme-on-background);
+        color: $color-text-primary;
         display: flex;
         gap: 10px;
         font-size: 14px;
@@ -228,10 +229,9 @@
     }
 
     &__hint {
-        color: var(--b3-theme-on-surface);
+        color: $color-text-secondary;
         font-size: 12px;
         line-height: 1.5;
-        opacity: 0.6;
     }
 }
 
@@ -244,30 +244,26 @@
 }
 
 .image-bed-manager {
-    // 主容器：多层毛玻璃叠加
-    @include glass(0.55, 28px);
-    border: 0.5px solid rgba(255, 255, 255, 0.2);
-    border-radius: 16px;
-    box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.1);
-    color: var(--b3-theme-on-background);
+    background: $color-bg;
+    border: 1px solid $color-border-lighter;
+    border-radius: $border-radius-base;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    color: $color-text-primary;
     display: grid;
-    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-columns: 200px minmax(0, 1fr);
     height: 100%;
     min-height: 0;
     overflow: hidden;
     width: 100%;
 
     &__sidebar {
-        @include glass(0.35, 16px);
-        border-right: 0.5px solid rgba(255, 255, 255, 0.15);
+        background: $color-white;
+        border-right: 1px solid $color-border-lighter;
         display: flex;
         flex-direction: column;
-        gap: 2px;
+        gap: 0;
         min-width: 0;
-        padding: 16px 10px;
+        padding: 12px 0;
     }
 
     &__brand {
@@ -276,39 +272,53 @@
         font-size: 15px;
         font-weight: 700;
         gap: 8px;
-        min-height: 36px;
-        padding: 0 10px 14px;
+        min-height: 40px;
+        padding: 0 16px 12px;
+        color: $color-text-primary;
+        border-bottom: 1px solid $color-border-lighter;
+        margin: 0 12px 8px;
 
         svg {
             height: 18px;
             width: 18px;
+            color: $color-primary;
         }
     }
 
     &__nav,
     .image-bed-config-card {
-        @include glass(0.2, 10px);
-        border: 0.5px solid transparent;
-        border-radius: 10px;
-        color: var(--b3-theme-on-background);
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        color: $color-text-regular;
         cursor: pointer;
         font-size: 14px;
-        font-weight: 500;
         line-height: 1.4;
-        padding: 10px 12px;
+        padding: 10px 16px;
         text-align: left;
-        transition: all 0.15s ease;
+        margin: 0 8px;
+        border-radius: $border-radius-base;
+        transition: background 0.15s ease, color 0.15s ease;
 
         &.is-active {
-            @include glass(0.4, 16px);
-            border-color: rgba(255, 255, 255, 0.2);
-            font-weight: 600;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+            background: $color-primary;
+            color: $color-white;
+            font-weight: 500;
+        }
+
+        &.is-disabled {
+            opacity: 0.5;
         }
 
         &:hover:not(.is-active) {
-            background: rgba(255, 255, 255, 0.08);
+            background: $color-bg;
+            color: $color-primary;
         }
+    }
+
+    &__no-enabled {
+        color: $color-danger;
+        font-size: 12px;
     }
 
     &__main {
@@ -316,30 +326,31 @@
         flex-direction: column;
         min-height: 0;
         min-width: 0;
+        background: $color-white;
     }
 
     &__header {
         align-items: center;
-        border-bottom: 0.5px solid rgba(255, 255, 255, 0.15);
+        border-bottom: 1px solid $color-border-lighter;
         display: flex;
         gap: 12px;
         justify-content: space-between;
-        min-height: 56px;
+        min-height: 52px;
         padding: 8px 16px;
+        background: $color-white;
     }
 
     &__title {
-        font-size: 17px;
-        font-weight: 700;
+        font-size: 16px;
+        font-weight: 600;
         line-height: 1.3;
-        letter-spacing: -0.02em;
+        color: $color-text-primary;
     }
 
     &__subtitle {
-        color: var(--b3-theme-on-surface);
+        color: $color-text-secondary;
         font-size: 12px;
         line-height: 1.4;
-        opacity: 0.6;
         margin-top: 1px;
     }
 
@@ -360,6 +371,7 @@
         min-height: 0;
         overflow: hidden;
         padding: 16px;
+        background: $color-white;
     }
 
     &__stats {
@@ -369,9 +381,9 @@
     }
 
     &__stat {
-        @include glass(0.35, 14px);
-        border: 0.5px solid rgba(255, 255, 255, 0.15);
-        border-radius: 12px;
+        background: $color-bg;
+        border: 1px solid $color-border-lighter;
+        border-radius: $border-radius-base;
         display: flex;
         flex-direction: column;
         gap: 2px;
@@ -379,16 +391,14 @@
         padding: 12px;
 
         span {
-            color: var(--b3-theme-on-surface);
+            color: $color-text-secondary;
             font-size: 12px;
-            font-weight: 500;
-            opacity: 0.7;
         }
 
         strong {
+            color: $color-text-primary;
             font-size: 20px;
             font-weight: 700;
-            letter-spacing: -0.03em;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -397,10 +407,9 @@
 
     &__notice,
     &__hint {
-        color: var(--b3-theme-on-surface);
+        color: $color-text-secondary;
         font-size: 13px;
         line-height: 1.5;
-        opacity: 0.6;
     }
 
     &__config-view {
@@ -410,16 +419,13 @@
     }
 
     &__config-list {
-        @include glass(0.2, 12px);
-        border-right: 0.5px solid rgba(255, 255, 255, 0.12);
-        border-radius: 0;
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 4px;
         min-height: 0;
         overflow: auto;
-        padding: 8px 14px 8px 0;
-        margin-right: 2px;
+        padding: 4px 8px 8px 0;
+        border-right: 1px solid $color-border-lighter;
     }
 
     &__form {
@@ -441,50 +447,62 @@
 .image-bed-config-card {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
+    margin: 0 !important;
 
     small {
-        color: var(--b3-theme-on-surface);
+        color: $color-text-secondary;
         font-size: 11px;
-        opacity: 0.6;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
     }
-}
 
-// ── iOS 风格选择器 ──────────────────────────────
+    &.is-active small {
+        color: rgba(255, 255, 255, 0.8);
+    }
 
-%ios-select {
-    -webkit-appearance: none;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1.5 1.5l4 4 4-4' stroke='currentColor' stroke-width='1.8' fill='none' stroke-linecap='round' stroke-linejoin='round' opacity='0.5'/%3E%3C/svg%3E") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 10px center !important;
-    padding-right: 30px !important;
-    cursor: pointer;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    &__enabled {
+        font-size: 11px;
+        margin-top: 2px;
+        color: $color-success;
+        font-weight: 500;
+    }
 
-    &:focus {
-        border-color: var(--b3-theme-primary) !important;
-        box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15) !important;
-        outline: none;
+    &.is-disabled &__enabled {
+        color: $color-text-placeholder;
     }
 }
 
+// ── Element UI 风格选择器 ────────────────────────
+
 select.b3-select {
-    @include glass(0.3, 12px);
-    border: 0.5px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 10px !important;
-    font-size: 14px !important;
-    font-weight: 500 !important;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23C0C4CC' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 10px center !important;
     padding: 8px 30px 8px 12px !important;
-    color: var(--b3-theme-on-background) !important;
-    min-height: 36px;
-    @extend %ios-select;
+    cursor: pointer;
+    border: 1px solid $color-border-base !important;
+    border-radius: $border-radius-base !important;
+    font-size: 13px !important;
+    color: $color-text-regular !important;
+    background-color: $color-white !important;
+    min-height: 34px;
+    transition: border-color 0.2s ease;
+
+    &:focus {
+        border-color: $color-primary !important;
+        outline: none;
+    }
+
+    &:hover {
+        border-color: $color-primary !important;
+    }
 }
 
-// ── iOS 风格复选框 ──────────────────────────────
+// ── Element UI 风格复选框 ────────────────────────
 
 .image-bed-panel__switch {
     align-items: center;
@@ -494,10 +512,8 @@ select.b3-select {
     line-height: 1.4;
     padding: 6px 0;
     cursor: pointer;
-    -webkit-user-select: none;
     user-select: none;
 
-    // 隐藏原生 checkbox
     input[type="checkbox"] {
         position: absolute;
         width: 1px;
@@ -509,46 +525,40 @@ select.b3-select {
         border: 0;
     }
 
-    // 自定义 switch 滑块
+    // 轨道
     input[type="checkbox"] + span::before {
         content: "";
         display: inline-block;
-        width: 48px;
-        height: 30px;
-        border-radius: 15px;
-        background: rgba(120, 120, 128, 0.24);
-        transition: background 0.25s ease;
+        width: 40px;
+        height: 20px;
+        border-radius: 10px;
+        background: $color-border-base;
+        transition: background 0.2s ease;
         vertical-align: middle;
-        margin-right: 8px;
         flex-shrink: 0;
         position: relative;
-        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
     }
 
-    // 滑块上的小圆点
+    // 滑块
     input[type="checkbox"] + span::after {
         content: "";
         position: absolute;
-        width: 26px;
-        height: 26px;
+        width: 16px;
+        height: 16px;
         border-radius: 50%;
-        background: #fff;
-        box-shadow:
-            0 1px 4px rgba(0, 0, 0, 0.12),
-            0 0 0 0.5px rgba(0, 0, 0, 0.04);
-        transition: transform 0.25s cubic-bezier(0.4, 0.0, 0.2, 1);
+        background: $color-white;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        transition: transform 0.2s ease;
         left: 2px;
         top: 2px;
     }
 
-    // 选中的背景色
     input[type="checkbox"]:checked + span::before {
-        background: #34c759;
+        background: $color-primary;
     }
 
-    // 选中的圆点位置（右移）
     input[type="checkbox"]:checked + span::after {
-        transform: translateX(18px);
+        transform: translateX(20px);
     }
 
     span {
@@ -556,47 +566,17 @@ select.b3-select {
         align-items: center;
         gap: 8px;
         position: relative;
-        color: var(--b3-theme-on-background);
+        color: $color-text-primary;
     }
 }
 
-// 普通复选框（如果有其他用途）
-input[type="checkbox"]:not(.image-bed-panel__switch input) {
-    @include glass(0.2, 8px);
-    border: 0.5px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
-    width: 18px;
-    height: 18px;
-    cursor: pointer;
-    appearance: none;
-    -webkit-appearance: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.15s ease, border-color 0.15s ease;
-
-    &:checked {
-        background: var(--b3-theme-primary);
-        border-color: var(--b3-theme-primary);
-    }
-
-    &:checked::after {
-        content: "";
-        width: 10px;
-        height: 5px;
-        border-left: 2px solid #fff;
-        border-bottom: 2px solid #fff;
-        transform: rotate(-45deg) translateY(-1px);
-    }
-}
-
-// ── Element UI 按钮风格 ─────────────────────────
+// ── Element UI 按钮 ─────────────────────────────
 
 .b3-button {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    border-radius: 6px !important;
+    border-radius: $border-radius-base !important;
     font-size: 13px !important;
     font-weight: 500 !important;
     padding: 8px 16px !important;
@@ -605,6 +585,7 @@ input[type="checkbox"]:not(.image-bed-panel__switch input) {
     cursor: pointer !important;
     line-height: 1.4 !important;
     user-select: none !important;
+    height: 34px !important;
 
     &:active {
         transform: scale(0.97);
@@ -615,105 +596,116 @@ input[type="checkbox"]:not(.image-bed-panel__switch input) {
         opacity: 0.55 !important;
     }
 
-    // Element UI — default （白底灰边框）
     &--outline {
-        color: #606266 !important;
-        background: #fff !important;
-        border-color: #dcdfe6 !important;
+        color: $color-text-regular !important;
+        background: $color-white !important;
+        border-color: $color-border-base !important;
 
         &:hover {
-            color: #409eff !important;
-            border-color: #c6e2ff !important;
+            color: $color-primary !important;
+            border-color: $color-primary !important;
             background: #ecf5ff !important;
         }
 
         &:active {
-            color: #3a8ee6 !important;
-            border-color: #3a8ee6 !important;
-            background: #fff !important;
+            color: darken($color-primary, 8%) !important;
+            border-color: darken($color-primary, 8%) !important;
+            background: $color-white !important;
         }
     }
 
-    // Element UI — primary（蓝色实心）
     &--primary {
-        color: #fff !important;
-        background: #409eff !important;
-        border-color: #409eff !important;
+        color: $color-white !important;
+        background: $color-primary !important;
+        border-color: $color-primary !important;
 
         &:hover {
-            background: #66b1ff !important;
-            border-color: #66b1ff !important;
+            background: lighten($color-primary, 8%) !important;
+            border-color: lighten($color-primary, 8%) !important;
         }
 
         &:active {
-            background: #3a8ee6 !important;
-            border-color: #3a8ee6 !important;
+            background: darken($color-primary, 5%) !important;
+            border-color: darken($color-primary, 5%) !important;
         }
     }
 
-    // Element UI — success（绿色实心）
     &--upload {
-        color: #fff !important;
-        background: #67c23a !important;
-        border-color: #67c23a !important;
+        color: $color-white !important;
+        background: $color-success !important;
+        border-color: $color-success !important;
 
         &:hover {
-            background: #85ce61 !important;
-            border-color: #85ce61 !important;
+            background: lighten($color-success, 8%) !important;
+            border-color: lighten($color-success, 8%) !important;
         }
 
         &:active {
-            background: #5daf34 !important;
-            border-color: #5daf34 !important;
+            background: darken($color-success, 5%) !important;
+            border-color: darken($color-success, 5%) !important;
         }
     }
 
-    // Element UI — danger（红色实心）
     &--danger {
-        color: #fff !important;
-        background: #f56c6c !important;
-        border-color: #f56c6c !important;
+        color: $color-white !important;
+        background: $color-danger !important;
+        border-color: $color-danger !important;
 
         &:hover {
-            background: #f78989 !important;
-            border-color: #f78989 !important;
+            background: lighten($color-danger, 8%) !important;
+            border-color: lighten($color-danger, 8%) !important;
         }
 
         &:active {
-            background: #dd6161 !important;
-            border-color: #dd6161 !important;
+            background: darken($color-danger, 5%) !important;
+            border-color: darken($color-danger, 5%) !important;
         }
     }
 
-    // Element UI — text（透明背景 + 蓝色文字）
     &--text {
-        color: #409eff !important;
+        color: $color-primary !important;
         background: transparent !important;
         border-color: transparent !important;
 
         &:hover {
-            color: #66b1ff !important;
+            color: lighten($color-primary, 8%) !important;
         }
 
         &:active {
-            color: #3a8ee6 !important;
+            color: darken($color-primary, 5%) !important;
         }
+    }
+
+    &--small {
+        height: 26px !important;
+        padding: 4px 10px !important;
+        font-size: 12px !important;
     }
 }
 
-// ── 表单输入框 iOS 风格 ──────────────────────────
+// ── 表单输入框 ──────────────────────────────────
 
 .b3-text-field {
-    @include glass(0.25, 12px);
-    border: 0.5px solid rgba(255, 255, 255, 0.15) !important;
-    border-radius: 10px !important;
-    font-size: 14px !important;
-    padding: 10px 12px !important;
+    border: 1px solid $color-border-base !important;
+    border-radius: $border-radius-base !important;
+    font-size: 13px !important;
+    padding: 8px 12px !important;
+    background: $color-white !important;
+    color: $color-text-regular !important;
+    height: 34px !important;
     transition: border-color 0.2s ease !important;
 
     &:focus {
-        border-color: var(--b3-theme-primary) !important;
-        box-shadow: 0 0 0 3px rgba(var(--b3-theme-primary), 0.12) !important;
+        border-color: $color-primary !important;
+        outline: none;
+    }
+
+    &:hover {
+        border-color: $color-primary !important;
+    }
+
+    &::placeholder {
+        color: $color-text-placeholder;
     }
 }
 
@@ -721,174 +713,209 @@ input[type="checkbox"]:not(.image-bed-panel__switch input) {
 
 body.theme--dark,
 body[data-theme-mode="dark"] {
+    --el-bg: #1d1e1f;
+    --el-bg-overlay: #262727;
+    --el-bg-page: #141414;
+    --el-border: #4c4d4f;
+    --el-border-light: #363637;
+    --el-text: #e5eaf3;
+    --el-text-secondary: #a3a6ad;
+    --el-text-placeholder: #636466;
+
     .image-bed-manager {
-        @include glass-dark(0.55, 28px);
+        background: var(--el-bg-page);
+        border-color: var(--el-border);
 
         &__sidebar {
-            @include glass-dark(0.35, 16px);
+            background: var(--el-bg-overlay);
+            border-right-color: var(--el-border);
+        }
+
+        &__brand {
+            border-bottom-color: var(--el-border-light);
+            color: var(--el-text);
         }
 
         &__nav,
         .image-bed-config-card {
-            @include glass-dark(0.15, 10px);
+            color: var(--el-text-secondary);
 
             &.is-active {
-                @include glass-dark(0.5, 16px);
-                border-color: rgba(255, 255, 255, 0.12);
+                background: $color-primary;
+                color: $color-white;
+            }
+
+            &:hover:not(.is-active) {
+                background: rgba(64, 158, 255, 0.08);
+                color: $color-primary;
             }
         }
 
+        &__main {
+            background: var(--el-bg);
+        }
+
+        &__header {
+            background: var(--el-bg);
+            border-bottom-color: var(--el-border-light);
+        }
+
+        &__title {
+            color: var(--el-text);
+        }
+
+        &__subtitle {
+            color: var(--el-text-secondary);
+        }
+
+        &__view {
+            background: var(--el-bg);
+        }
+
         &__stat {
-            @include glass-dark(0.35, 14px);
+            background: var(--el-bg-overlay);
+            border-color: var(--el-border-light);
+
+            strong { color: var(--el-text); }
+            span { color: var(--el-text-secondary); }
         }
 
         &__config-list {
-            @include glass-dark(0.2, 12px);
+            border-right-color: var(--el-border-light);
+        }
+
+        &__notice,
+        &__hint {
+            color: var(--el-text-secondary);
         }
     }
 
     .image-bed {
         &__item {
-            @include glass-dark(0.45, 16px);
+            background: var(--el-bg-overlay);
+            border-color: var(--el-border-light);
         }
 
         &__thumb {
-            @include glass-dark(0.35, 14px);
+            background: var(--el-bg-page);
+            border-color: var(--el-border);
         }
+
+        &__name { color: var(--el-text); }
+        &__source { color: var(--el-text-placeholder); }
 
         &__result {
-            @include glass-dark(0.5, 12px);
+            background: var(--el-bg-overlay);
+            border-color: var(--el-border-light);
+            color: var(--el-text-secondary);
+        }
+
+        &__empty {
+            color: var(--el-text-placeholder);
         }
     }
 
-    .b3-text-field {
-        @include glass-dark(0.25, 12px);
-    }
+    .image-bed-panel {
+        &__field span { color: var(--el-text-secondary); }
 
-    .b3-button--outline {
-        @include glass-dark(0.25, 12px);
-    }
-
-    .b3-button--primary {
-        @include glass-dark(0.35, 14px);
-        border-color: rgba(0, 122, 255, 0.3) !important;
-    }
-
-    .b3-button--upload {
-        @include glass-dark(0.3, 14px);
-        border-color: rgba(52, 199, 89, 0.3) !important;
-    }
-
-    .b3-button {
-        // dark — outline
-        &--outline {
-            color: #e5eaf3 !important;
-            background: rgba(255, 255, 255, 0.06) !important;
-            border-color: rgba(255, 255, 255, 0.15) !important;
+        &__secret-toggle {
+            background: var(--el-bg-overlay);
+            border-color: var(--el-border);
+            color: var(--el-text-secondary);
 
             &:hover {
-                color: #409eff !important;
-                border-color: #409eff !important;
-                background: rgba(64, 158, 255, 0.1) !important;
-            }
-
-            &:active {
-                color: #66b1ff !important;
-                border-color: #66b1ff !important;
-                background: transparent !important;
+                border-color: $color-primary;
+                color: $color-primary;
             }
         }
 
-        // dark — primary
-        &--primary {
-            background: #2d6bb4 !important;
-            border-color: #2d6bb4 !important;
-
-            &:hover {
-                background: #409eff !important;
-                border-color: #409eff !important;
-            }
-
-            &:active {
-                background: #3a8ee6 !important;
-                border-color: #3a8ee6 !important;
-            }
-        }
-
-        // dark — upload
-        &--upload {
-            background: #529b2e !important;
-            border-color: #529b2e !important;
-
-            &:hover {
-                background: #67c23a !important;
-                border-color: #67c23a !important;
-            }
-
-            &:active {
-                background: #5daf34 !important;
-                border-color: #5daf34 !important;
-            }
-        }
-
-        // dark — danger
-        &--danger {
-            background: #c45656 !important;
-            border-color: #c45656 !important;
-
-            &:hover {
-                background: #f56c6c !important;
-                border-color: #f56c6c !important;
-            }
-
-            &:active {
-                background: #dd6161 !important;
-                border-color: #dd6161 !important;
-            }
-        }
-
-        // dark — text
-        &--text {
-            color: #66b1ff !important;
-
-            &:hover {
-                color: #8cc5ff !important;
-            }
-
-            &:active {
-                color: #409eff !important;
-            }
+        &__switch {
+            color: var(--el-text);
         }
     }
 
     select.b3-select {
-        @include glass-dark(0.3, 12px);
+        background-color: var(--el-bg-overlay) !important;
+        border-color: var(--el-border) !important;
+        color: var(--el-text) !important;
+
+        &:hover {
+            border-color: $color-primary !important;
+        }
     }
 
-    .image-bed-panel__secret-toggle {
-        @include glass-dark(0.3, 12px);
+    .image-bed-panel__switch {
+        input[type="checkbox"] + span::before {
+            background: var(--el-border);
+        }
+        input[type="checkbox"]:checked + span::before {
+            background: $color-primary;
+        }
+        input[type="checkbox"] + span::after {
+            background: var(--el-text);
+        }
     }
 
-    // 暗色模式 switch
-    .image-bed-panel__switch input[type="checkbox"] + span::before {
-        background: rgba(120, 120, 128, 0.4);
+    .b3-text-field {
+        background: var(--el-bg-overlay) !important;
+        border-color: var(--el-border) !important;
+        color: var(--el-text) !important;
+
+        &:hover, &:focus {
+            border-color: $color-primary !important;
+        }
     }
 
-    .image-bed-panel__switch input[type="checkbox"]:checked + span::before {
-        background: #30d158;
-    }
+    .b3-button {
+        &--outline {
+            color: var(--el-text) !important;
+            background: var(--el-bg-overlay) !important;
+            border-color: var(--el-border) !important;
 
-    .image-bed-panel__switch input[type="checkbox"] + span::after {
-        background: rgba(255, 255, 255, 0.9);
-        box-shadow:
-            0 1px 4px rgba(0, 0, 0, 0.2),
-            0 0 0 0.5px rgba(255, 255, 255, 0.04);
-    }
+            &:hover {
+                color: $color-primary !important;
+                border-color: $color-primary !important;
+                background: rgba(64, 158, 255, 0.08) !important;
+            }
+        }
 
-    // 暗色模式普通 checkbox
-    input[type="checkbox"]:not(.image-bed-panel__switch input) {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.15);
+        &--primary {
+            background: darken($color-primary, 10%) !important;
+            border-color: darken($color-primary, 10%) !important;
+
+            &:hover {
+                background: $color-primary !important;
+                border-color: $color-primary !important;
+            }
+        }
+
+        &--upload {
+            background: darken($color-success, 10%) !important;
+            border-color: darken($color-success, 10%) !important;
+
+            &:hover {
+                background: $color-success !important;
+                border-color: $color-success !important;
+            }
+        }
+
+        &--danger {
+            background: darken($color-danger, 10%) !important;
+            border-color: darken($color-danger, 10%) !important;
+
+            &:hover {
+                background: $color-danger !important;
+                border-color: $color-danger !important;
+            }
+        }
+
+        &--text {
+            color: lighten($color-primary, 15%) !important;
+
+            &:hover {
+                color: lighten($color-primary, 25%) !important;
+            }
+        }
     }
 }
 
@@ -907,7 +934,7 @@ body[data-theme-mode="dark"] {
         }
 
         &__thumb {
-            height: 72px;
+            height: 64px;
             width: 72px;
         }
     }
@@ -921,7 +948,7 @@ body[data-theme-mode="dark"] {
         }
 
         &__settings {
-            border-bottom: 0.5px solid rgba(255, 255, 255, 0.15);
+            border-bottom: 1px solid $color-border-lighter;
             border-right: 0;
             padding-bottom: 16px;
             padding-right: 0;
@@ -929,21 +956,22 @@ body[data-theme-mode="dark"] {
     }
 
     .image-bed-manager {
-        border-radius: 12px;
         grid-template-columns: 1fr;
 
         &__sidebar {
-            border-bottom: 0.5px solid rgba(255, 255, 255, 0.12);
+            border-bottom: 1px solid $color-border-lighter;
             border-right: 0;
             flex-direction: row;
             gap: 4px;
             overflow: auto;
-            padding: 10px;
+            padding: 8px;
         }
 
         &__brand {
             padding: 0 6px;
             white-space: nowrap;
+            border-bottom: none;
+            margin: 0;
         }
 
         &__nav {
@@ -966,10 +994,10 @@ body[data-theme-mode="dark"] {
         }
 
         &__config-list {
-            border-bottom: 0.5px solid rgba(255, 255, 255, 0.12);
+            border-bottom: 1px solid $color-border-lighter;
             border-right: 0;
-            max-height: 200px;
-            padding-bottom: 10px;
+            max-height: 180px;
+            padding-bottom: 8px;
             padding-right: 0;
         }
 

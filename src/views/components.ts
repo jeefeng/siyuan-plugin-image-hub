@@ -55,20 +55,19 @@ export function sidebar(
 export function header(
     title: string,
     subtitle: string,
-    configs: StorageConfig[],
-    activeId: string,
     i18n: Record<string, string>,
+    hasEnabled: boolean,
+    enabledName?: string,
 ): string {
-    const opts = configs.map((c) =>
-        `<option value="${escapeAttribute(c.id)}"${c.id === activeId ? " selected" : ""}>${escapeHtml(c.name)}</option>`
-    ).join("");
+    const statusLine = hasEnabled
+        ? `${escapeHtml(enabledName || "")} / ${escapeHtml(subtitle)}`
+        : `<span class="image-bed-manager__no-enabled">${escapeHtml(i18n.noEnabledConfig)}</span>`;
     return `<header class="image-bed-manager__header">
     <div>
         <div class="image-bed-manager__title">${escapeHtml(title)}</div>
-        <div class="image-bed-manager__subtitle">${escapeHtml(subtitle)}</div>
+        <div class="image-bed-manager__subtitle">${statusLine}</div>
     </div>
     <div class="image-bed-manager__header-actions">
-        <select class="b3-select" data-action="switch-active-config">${opts}</select>
         <button class="b3-button b3-button--outline" data-action="refresh-manager">${escapeHtml(i18n.refreshImages)}</button>
         <button class="b3-button b3-button--primary" data-action="upload-current">${escapeHtml(i18n.uploadCurrentDocImages)}</button>
     </div>
@@ -135,16 +134,18 @@ export function articleView(
 
 // ── 配置视图 ──────────────────────────────────────
 
-/** 配置卡片 */
+/** 配置卡片（含启用状态指示） */
 export function configCard(
     config: StorageConfig,
     active: boolean,
     label: (p: ProviderType) => string,
     i18n: Record<string, string>,
 ): string {
-    return `<button class="image-bed-config-card${active ? " is-active" : ""}" data-action="select-config" data-id="${escapeAttribute(config.id)}">
-    <span>${escapeHtml(config.name)}</span>
+    const statusText = config.enabled ? i18n.enabledConfig : i18n.disableConfig;
+    return `<button class="image-bed-config-card${active ? " is-active" : ""}${config.enabled ? "" : " is-disabled"}" data-action="select-config" data-id="${escapeAttribute(config.id)}">
+    <span class="image-bed-config-card__name">${escapeHtml(config.name)}</span>
     <small>${escapeHtml(label(config.provider))} / ${escapeHtml(config.bucket || i18n.bucketNotSet)}</small>
+    <span class="image-bed-config-card__enabled">${escapeHtml(statusText)}</span>
 </button>`;
 }
 
@@ -156,8 +157,8 @@ export function configList(
     i18n: Record<string, string>,
 ): string {
     return `<div class="image-bed-manager__config-actions">
-    <button class="b3-button b3-button--text" data-action="add-config">${escapeHtml(i18n.addConfig)}</button>
-    <button class="b3-button b3-button--outline" data-action="duplicate-config">${escapeHtml(i18n.duplicateConfig)}</button>
+    <button class="b3-button b3-button--small b3-button--text" data-action="add-config">+ ${escapeHtml(i18n.addConfig)}</button>
+    <button class="b3-button b3-button--small b3-button--text" data-action="duplicate-config">${escapeHtml(i18n.duplicateConfig)}</button>
 </div>
 ${configs.map((c) => configCard(c, c.id === activeId, label, i18n)).join("")}`;
 }
@@ -210,6 +211,10 @@ ${configField("bucket", i18n.bucket, config.bucket, i18n)}
 ${configField("endpoint", i18n.endpoint, config.endpoint, i18n)}
 ${configField("directoryTemplate", i18n.directoryTemplate, config.directoryTemplate, i18n)}
 ${configField("customDomain", i18n.customDomain, config.customDomain, i18n)}
+<label class="image-bed-panel__switch image-bed-panel__toggle-enabled" data-action="toggle-config-enabled">
+    <input type="checkbox" data-field="enabled"${config.enabled ? " checked" : ""}>
+    <span>${config.enabled ? escapeHtml(i18n.enabledConfig) : escapeHtml(i18n.disableConfig)}</span>
+</label>
 <label class="image-bed-panel__switch">
     <input type="checkbox" data-field="autoUploadOnPaste"${config.autoUploadOnPaste ? " checked" : ""}>
     <span>${escapeHtml(i18n.autoUploadOnPaste)}</span>

@@ -137,7 +137,7 @@ export default class ImageBedPlugin extends Plugin {
     }
 
     createStorageConfig(name: string): StorageConfig {
-        return {id: this.genId(), name, provider: "aliyun-oss", enabled: true, ...DEFAULT_SETTINGS};
+        return {id: this.genId(), name, provider: "aliyun-oss", enabled: false, ...DEFAULT_SETTINGS};
     }
 
     private genId() {
@@ -185,6 +185,10 @@ export default class ImageBedPlugin extends Plugin {
     }
 
     assertSettingsReady() {
+        // 必须有启用中的配置
+        if (!this.storageData.configs.some((c) => c.enabled)) {
+            throw new Error(this.i18n.noEnabledConfig);
+        }
         const missing = [
             ["accessKeyId", this.i18n.accessKeyId],
             ["accessKeySecret", this.i18n.accessKeySecret],
