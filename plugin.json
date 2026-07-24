@@ -2,7 +2,7 @@
   "name": "siyuan-plugin-image-hub",
   "author": "jeefeng",
   "url": "https://github.com/jeefeng/siyuan-plugin-image-hub",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "minAppVersion": "3.6.4",
   "kernels": [
     "all"
@@ -35,8 +35,10 @@
   "keywords": [
     "图床",
     "阿里云 OSS",
+    "腾讯云 COS",
     "image bed",
     "Aliyun OSS",
+    "Tencent COS",
     "图片上传"
   ]
 }

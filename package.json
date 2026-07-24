@@ -1,7 +1,7 @@
 {
   "name": "siyuan-plugin-image-hub",
-  "version": "0.1.1",
-  "description": "Upload local SiYuan document images to Aliyun OSS and replace links automatically.",
+  "version": "0.1.2",
+  "description": "Upload local SiYuan document images to custom image beds (Aliyun OSS / Tencent COS) and replace links automatically.",
   "main": ".src/index.js",
   "scripts": {
     "format": "dprint fmt",
