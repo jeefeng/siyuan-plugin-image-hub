@@ -191,7 +191,7 @@ export function configField(
 export function providerField(current: ProviderType, i18n: Record<string, string>): string {
     const items: [ProviderType, string, boolean][] = [
         ["aliyun-oss", i18n.aliyunOss, false],
-        ["tencent-cos", i18n.tencentCosSoon, true],
+        ["tencent-cos", i18n.tencentCos, false],
         ["qiniu", i18n.qiniuSoon, true],
         ["s3", i18n.s3Soon, true],
     ];

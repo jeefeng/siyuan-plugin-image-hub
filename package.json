@@ -24,7 +24,7 @@
   "license": "MIT",
   "packageManager": "pnpm@11.4.0",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=20.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.5",
@@ -47,5 +47,8 @@
     "webpack": "^5.107.2",
     "webpack-cli": "^7.0.3",
     "zip-webpack-plugin": "^4.0.3"
+  },
+  "dependencies": {
+    "cos-js-sdk-v5": "^1.10.1"
   }
 }

@@ -11,7 +11,6 @@ import {
     type ArticleImage,
     type ImageBedSettings,
     type ImageBedStorage,
-    type ManagerView,
     type PasteDetail,
     type ProviderType,
     type StorageConfig,
@@ -23,6 +22,7 @@ import {
     STORAGE_NAME,
 } from "./types";
 import {pickImageFile} from "./ui";
+import {getOrThrow} from "./provider";
 import {ManagerDialog} from "./views/ManagerDialog";
 
 export default class ImageBedPlugin extends Plugin {
@@ -243,28 +243,12 @@ export default class ImageBedPlugin extends Plugin {
     }
 
     async uploadBlob(blob: Blob, objectKey: string, contentType: string): Promise<string> {
-        if (this.settingsData.provider !== "aliyun-oss") throw new Error(this.i18n.providerComingSoon);
-        const endpoint = this.normalizeEndpoint(this.settingsData.endpoint);
-        const bucket = this.settingsData.bucket;
-        const ossDate = new Date().toUTCString();
-        const resource = `/${bucket}/${objectKey}`;
-        const stringToSign = ["PUT", "", contentType, ossDate, `x-oss-date:${ossDate}\n${resource}`].join("\n");
-        const signature = await this.signOssRequest(stringToSign, this.settingsData.accessKeySecret);
-        const url = `${this.protocol()}://${bucket}.${endpoint}/${this.encodeObjectKey(objectKey)}`;
-        const response = await fetch(url, {
-            method: "PUT",
-            headers: {
-                Authorization: `OSS ${this.settingsData.accessKeyId}:${signature}`,
-                "Content-Type": contentType,
-                "x-oss-date": ossDate,
-            },
-            body: blob,
-        });
-        if (!response.ok) {
-            const text = await response.text().catch(() => "");
-            throw new Error(this.formatUploadError(response, text));
+        const provider = getOrThrow(this.settingsData.provider);
+        const url = await provider.upload(this.settingsData, blob, objectKey, contentType);
+        if (!url?.trim()) {
+            throw new Error("Upload succeeded but public URL is empty. Check bucket / endpoint / custom domain.");
         }
-        return this.publicUrl(objectKey);
+        return url;
     }
 
     pickImageFile(): Promise<File | null> {
@@ -278,9 +262,112 @@ export default class ImageBedPlugin extends Plugin {
     }
 
     async replaceImageInDocument(docId: string, source: string, remoteUrl: string): Promise<void> {
-        const markdown = await this.getDocumentMarkdown(docId);
-        const next = markdown.split(source).join(remoteUrl);
-        if (next !== markdown) await this.updateDocumentMarkdown(docId, next);
+        // 只替换本地 assets 图片；勿整篇 update 文档根块（会重解析挂件等并触发 invalid ID）
+        if (!this.isLocalImage(source)) return;
+        if (!remoteUrl?.trim()) throw new Error("remoteUrl is empty");
+
+        const patterns = this.imageSourcePatterns(source);
+        const blockIds = await this.findBlocksContainingImage(docId, patterns);
+        if (blockIds.length === 0) {
+            console.warn(`[${this.name}] no block found containing image: ${source}`);
+            return;
+        }
+
+        let replaced = 0;
+        for (const blockId of blockIds) {
+            try {
+                const data = await this.post<{kramdown: string}>("/api/block/getBlockKramdown", {id: blockId});
+                const md = data?.kramdown || "";
+                const next = this.replaceImageSources(md, patterns, remoteUrl);
+                if (next === md) continue;
+                await this.post("/api/block/updateBlock", {
+                    id: blockId,
+                    dataType: "markdown",
+                    data: next,
+                });
+                replaced++;
+            } catch (e) {
+                console.warn(`[${this.name}] block replace failed for ${blockId}:`, e);
+                throw e;
+            }
+        }
+        if (replaced === 0) {
+            throw new Error(`Failed to replace image link: ${source}`);
+        }
+    }
+
+    /** 收集同一图片在文档中可能出现的路径写法 */
+    private imageSourcePatterns(source: string): string[] {
+        const patterns = new Set<string>();
+        const add = (v: string) => {
+            const s = v.trim();
+            if (!s) return;
+            patterns.add(s);
+            try {patterns.add(decodeURIComponent(s));} catch {/* ignore */}
+            try {patterns.add(encodeURI(s));} catch {/* ignore */}
+        };
+        add(source);
+        add(source.replace(/^\.?\/+/, ""));
+        add(`/${source.replace(/^\.?\/+/, "")}`);
+        return [...patterns];
+    }
+
+    private replaceImageSources(markdown: string, patterns: string[], remoteUrl: string): string {
+        let next = markdown;
+        for (const p of patterns) {
+            if (!p || !next.includes(p)) continue;
+            // 优先替换 markdown / HTML 图片上下文，避免误伤其它文本
+            next = next.split(`](${p})`).join(`](${remoteUrl})`);
+            next = next.split(`](<${p}>)`).join(`](${remoteUrl})`);
+            next = next.split(`src="${p}"`).join(`src="${remoteUrl}"`);
+            next = next.split(`src='${p}'`).join(`src='${remoteUrl}'`);
+            next = next.split(`src="${encodeURI(p)}"`).join(`src="${remoteUrl}"`);
+            if (next.includes(p)) {
+                next = next.split(p).join(remoteUrl);
+            }
+        }
+        return next;
+    }
+
+    private async findBlocksContainingImage(docId: string, patterns: string[]): Promise<string[]> {
+        const ids = new Set<string>();
+        try {
+            const likes = patterns
+                .map((p) => `markdown LIKE '%${this.escapeSql(p)}%'`)
+                .join(" OR ");
+            const rows = await this.post<Array<{id: string}>>("/api/query/sql", {
+                stmt: `SELECT id FROM blocks WHERE root_id = '${this.escapeSql(docId)}' AND type != 'd' AND (${likes})`,
+            });
+            for (const row of rows || []) {
+                if (row?.id) ids.add(row.id);
+            }
+        } catch (err) {
+            console.warn(`[${this.name}] sql lookup failed, walking child blocks:`, err);
+        }
+        if (ids.size > 0) return [...ids];
+        return this.findBlocksContainingByWalk(docId, patterns);
+    }
+
+    private async findBlocksContainingByWalk(docId: string, patterns: string[]): Promise<string[]> {
+        const ids: string[] = [];
+        const walk = async (parentId: string) => {
+            const children = await this.post<Array<{id: string; type?: string}>>("/api/block/getChildBlocks", {id: parentId});
+            for (const child of children || []) {
+                if (!child?.id) continue;
+                try {
+                    const data = await this.post<{kramdown: string}>("/api/block/getBlockKramdown", {id: child.id});
+                    const md = data?.kramdown || "";
+                    if (patterns.some((p) => md.includes(p))) ids.push(child.id);
+                } catch {/* skip unreadable blocks */}
+                await walk(child.id);
+            }
+        };
+        await walk(docId);
+        return ids;
+    }
+
+    private escapeSql(value: string): string {
+        return value.replace(/'/g, "''");
     }
 
     // ── 图片分析 ────────────────────────────────
@@ -325,8 +412,10 @@ export default class ImageBedPlugin extends Plugin {
 
     private isLocalImage(source: string): boolean {
         if (/^(https?:)?\/\//i.test(source)) return false;
-        if (/^(data|blob|mailto|javascript):/i.test(source)) return false;
-        return true;
+        if (/^(data|blob|mailto|javascript|file):/i.test(source)) return false;
+        // 仅处理思源文档资源 assets/，排除挂件/插件路径（如 kmind/kmind.svg）
+        const path = source.replace(/^\.?\/+/, "").split("?")[0].split("#")[0];
+        return path === "assets" || path.startsWith("assets/");
     }
 
     private toDisplayUrl(source: string): string {
@@ -364,41 +453,8 @@ export default class ImageBedPlugin extends Plugin {
     private sanitizeFileName(fileName: string) {return (fileName || `image-${Date.now()}.png`).replace(/[\\/:*?"<>|#\s]+/g, "-");}
 
     private getManagedObjectKey(source: string): string {
-        try {
-            const url = new URL(source, location.origin);
-            const endpoint = this.normalizeEndpoint(this.settingsData.endpoint);
-            const hosts = new Set([`${this.settingsData.bucket}.${endpoint}`]);
-            const domain = this.normalizeDomain(this.settingsData.customDomain);
-            if (domain) hosts.add(new URL(domain).host);
-            return hosts.has(url.host) ? decodeURIComponent(url.pathname.replace(/^\/+/, "")) : "";
-        } catch {return "";}
-    }
-
-    private publicUrl(objectKey: string): string {
-        const domain = this.normalizeDomain(this.settingsData.customDomain);
-        if (domain) return `${domain}/${this.encodeObjectKey(objectKey)}`;
-        return `${this.protocol()}://${this.settingsData.bucket}.${this.normalizeEndpoint(this.settingsData.endpoint)}/${this.encodeObjectKey(objectKey)}`;
-    }
-
-    private normalizeDomain(domain: string): string {
-        const v = domain.trim().replace(/\/+$/, "");
-        if (!v) return "";
-        return /^https?:\/\//i.test(v) ? v : `${this.protocol()}://${v}`;
-    }
-
-    private normalizeEndpoint(ep: string): string {
-        return ep.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "").replace(/^(oss-[\w-]+)$/, "$1.aliyuncs.com");
-    }
-
-    private protocol() {return location.protocol === "http:" ? "http" : "https";}
-    private encodeObjectKey(key: string) {return key.split("/").map((p) => encodeURIComponent(p)).join("/");}
-
-    private async signOssRequest(msg: string, secret: string): Promise<string> {
-        const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), {name: "HMAC", hash: "SHA-1"}, false, ["sign"]);
-        const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(msg));
-        let bin = "";
-        new Uint8Array(sig).forEach((b) => {bin += String.fromCharCode(b);});
-        return btoa(bin);
+        const provider = getOrThrow(this.settingsData.provider);
+        return provider.getManagedKey(this.settingsData, source);
     }
 
     // ── 文档 ID ─────────────────────────────────
@@ -420,10 +476,6 @@ export default class ImageBedPlugin extends Plugin {
     async getDocumentMarkdown(docId: string): Promise<string> {
         const data = await this.post<{kramdown: string}>("/api/block/getBlockKramdown", {id: docId});
         return data.kramdown || "";
-    }
-
-    private async updateDocumentMarkdown(docId: string, markdown: string) {
-        await this.post("/api/block/updateBlock", {id: docId, dataType: "markdown", data: markdown});
     }
 
     private post<T = any>(url: string, payload: any): Promise<T> {
@@ -521,30 +573,5 @@ export default class ImageBedPlugin extends Plugin {
 
     private toErrorMessage(error: unknown): string {
         return error instanceof Error ? error.message : String(error);
-    }
-
-    private formatUploadError(response: Response, text: string): string {
-        const err = this.parseOssError(text);
-        if (err.code === "AccessDenied" && err.endpoint) {
-            return this.i18n.ossEndpointMismatch.replace("${endpoint}", err.endpoint).replace("${bucket}", err.bucket || this.settingsData.bucket);
-        }
-        if (err.code === "AccessDenied" && err.message.indexOf("valid Date") > -1) return this.i18n.ossInvalidDate;
-        return [
-            `${this.i18n.uploadFailed}: ${response.status} ${response.statusText}`.trim(),
-            err.code ? `Code: ${err.code}` : "",
-            err.message ? `Message: ${err.message}` : "",
-            err.requestId ? `RequestId: ${err.requestId}` : "",
-            !err.code && text ? text : "",
-        ].filter(Boolean).join("\n");
-    }
-
-    private parseOssError(text: string) {
-        const empty = {bucket: "", code: "", endpoint: "", message: "", requestId: ""};
-        if (!text.trim().startsWith("<")) return empty;
-        try {
-            const doc = new DOMParser().parseFromString(text, "application/xml");
-            const r = (n: string) => doc.querySelector(n)?.textContent?.trim() || "";
-            return {bucket: r("Bucket"), code: r("Code"), endpoint: r("Endpoint"), message: r("Message"), requestId: r("RequestId")};
-        } catch {return empty;}
     }
 }

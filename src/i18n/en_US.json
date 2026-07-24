@@ -42,7 +42,7 @@
   "managerTitle": "Image Bed Manager",
   "managedRemoteImage": "Uploaded to this image bed",
   "missingSettings": "Please complete image bed settings first",
-  "multiProviderHint": "Only Aliyun OSS is available now. Tencent COS, Qiniu, and S3-compatible storage are reserved for future support.",
+  "multiProviderHint": "Aliyun OSS and Tencent COS are supported. Qiniu and S3-compatible storage are reserved for future support.",
   "newConfigName": "New Aliyun Config",
   "noImagesFound": "No static images found in the current document",
   "noLocalImagesFound": "No local images need uploading in the current document",

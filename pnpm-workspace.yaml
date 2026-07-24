@@ -3,5 +3,6 @@ packages:
 
 allowBuilds:
   "@parcel/watcher": false
+  cos-js-sdk-v5: true
   dprint: true
   esbuild: false

@@ -42,7 +42,7 @@
   "managerTitle": "图床管理",
   "managedRemoteImage": "已上传到当前图床",
   "missingSettings": "请先补全图床配置",
-  "multiProviderHint": "当前仅支持阿里云 OSS；腾讯云 COS、七牛云和 S3 兼容存储已预留入口。",
+  "multiProviderHint": "已支持阿里云 OSS 和腾讯云 COS；七牛云和 S3 兼容存储已预留入口。",
   "newConfigName": "新的阿里云配置",
   "noImagesFound": "当前文章没有可预览的静态图片",
   "noLocalImagesFound": "当前文章没有需要上传的本地图片",
